@@ -1,7 +1,6 @@
 # OpenCode Runtime State
 .worktrees/
 handovers/
-plans/
 memory-bank/taskRegistry.md
 .opencode-README-section.md
 
