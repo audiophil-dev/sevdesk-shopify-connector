@@ -128,12 +128,12 @@ Deliverables:
 
 The research coordinator will produce:
 
-1. **Technical Research Report** (`docs/knowledge/technical/shopify-api-research.md`)
+1. **Technical Research Report** (`workspace/docs/knowledge/technical/shopify-api-research.md`)
    - Shopify API capabilities and limitations
    - Integration patterns and best practices
    - Rate limiting and quota analysis
 
-2. **Sevdesk Integration Guide** (`docs/knowledge/technical/sevdesk-api-research.md`)
+2. **Sevdesk Integration Guide** (`workspace/docs/knowledge/technical/sevdesk-api-research.md`)
    - API endpoints and data structures
    - Authentication options
    - Data mapping requirements

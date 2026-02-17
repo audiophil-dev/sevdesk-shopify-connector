@@ -40,8 +40,8 @@ workspace/
 
 | Document | Owner | Purpose |
 |----------|-------|---------|
-| `docs/knowledge/technical/shopify-api-research.md` | @technology-researcher | Shopify API capabilities |
-| `docs/knowledge/technical/sevdesk-api-research.md` | @technology-researcher | Sevdesk API documentation |
+| `workspace/docs/knowledge/technical/shopify-api-research.md` | @technology-researcher | Shopify API capabilities |
+| `workspace/docs/knowledge/technical/sevdesk-api-research.md` | @technology-researcher | Sevdesk API documentation |
 | `workspace/docs/planning/integration-architecture-spec.md` | @software-architect | Architecture decisions |
 | `workspace/docs/tracking/timeline.md` | @planning-collaborator | Development timeline |
 

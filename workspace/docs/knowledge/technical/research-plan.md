@@ -29,15 +29,15 @@ Conduct comprehensive API research and integration pattern analysis to inform th
 
 | ID | Agent | Research Question | Output File | Priority |
 |----|-------|-------------------|-------------|----------|
-| R1 | @technology-researcher | Shopify API capabilities: webhooks, order data structure, payment integration, email capabilities, rate limits, authentication | docs/knowledge/technical/shopify-api-research.md | high |
-| R2 | @technology-researcher | Sevdesk API capabilities: invoice creation, authentication methods, rate limits, webhook support, contact management | docs/knowledge/technical/sevdesk-api-research.md | high |
-| R3 | @technology-researcher | Integration patterns: event-driven vs polling architectures, webhook reliability, retry logic, idempotency, dead letter queues | docs/knowledge/technical/integration-patterns.md | high |
-| R4 | @technology-researcher | Tech stack recommendations: language/framework for API connectors, deployment approaches, database requirements, monitoring | docs/knowledge/technical/tech-stack-recommendation.md | high |
+| R1 | @technology-researcher | Shopify API capabilities: webhooks, order data structure, payment integration, email capabilities, rate limits, authentication | workspace/docs/knowledge/technical/shopify-api-research.md | high |
+| R2 | @technology-researcher | Sevdesk API capabilities: invoice creation, authentication methods, rate limits, webhook support, contact management | workspace/docs/knowledge/technical/sevdesk-api-research.md | high |
+| R3 | @technology-researcher | Integration patterns: event-driven vs polling architectures, webhook reliability, retry logic, idempotency, dead letter queues | workspace/docs/knowledge/technical/integration-patterns.md | high |
+| R4 | @technology-researcher | Tech stack recommendations: language/framework for API connectors, deployment approaches, database requirements, monitoring | workspace/docs/knowledge/technical/tech-stack-recommendation.md | high |
 
 ## Synthesis Requirements
 
 - **Format**: all
-- **Output**: docs/knowledge/technical/connector-architecture-synthesis.md
+- **Output**: workspace/docs/knowledge/technical/connector-architecture-synthesis.md
 - **Key Sections**:
   - API capabilities comparison
   - Integration architecture recommendation

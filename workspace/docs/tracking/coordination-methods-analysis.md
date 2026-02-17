@@ -122,7 +122,7 @@ This would be a separate infrastructure improvement task.
 
 **Session ID**: ses_39307beb5ffekOqM1R4eajq9C2
 **Status**: Completed research plan creation
-**Output**: docs/knowledge/technical/research-plan.md (created successfully)
+**Output**: workspace/docs/knowledge/technical/research-plan.md (created successfully)
 **Messages**: 6 messages stored
 **Tokens**: 23,951+ consumed
 **Verdict**: HTTP API spawning WORKS

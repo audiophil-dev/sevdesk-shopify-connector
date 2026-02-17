@@ -541,10 +541,10 @@ SENDGRID_API_KEY=your_key (Phase 2)
 
 ### 12.3 Research Documents
 
-- `docs/knowledge/technical/shopify-api-research.md` - Shopify API capabilities
-- `docs/knowledge/technical/sevdesk-api-research.md` - Sevdesk API capabilities
-- `docs/knowledge/technical/integration-patterns.md` - Integration architecture patterns
-- `docs/knowledge/technical/tech-stack-recommendation.md` - Technology selection rationale
+- `workspace/docs/knowledge/technical/shopify-api-research.md` - Shopify API capabilities
+- `workspace/docs/knowledge/technical/sevdesk-api-research.md` - Sevdesk API capabilities
+- `workspace/docs/knowledge/technical/integration-patterns.md` - Integration architecture patterns
+- `workspace/docs/knowledge/technical/tech-stack-recommendation.md` - Technology selection rationale
 
 ---
 

@@ -4,7 +4,7 @@
 **Date**: 2026-02-17  
 **Research Question**: What technology stack is recommended for building a reliable Shopify-Sevdesk connector?  
 **Depth**: Comprehensive  
-**Output**: docs/knowledge/technical/tech-stack-recommendation.md
+**Output**: workspace/docs/knowledge/technical/tech-stack-recommendation.md
 
 ---
 

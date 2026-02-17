@@ -3,7 +3,7 @@
 **Research Task**: R3 - Shopify-Sevdesk Connector  
 **Date**: 2026-02-17  
 **Depth**: Comprehensive  
-**Output**: docs/knowledge/technical/integration-patterns.md
+**Output**: workspace/docs/knowledge/technical/integration-patterns.md
 
 ---
 
