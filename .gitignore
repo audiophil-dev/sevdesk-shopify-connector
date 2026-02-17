@@ -8,6 +8,10 @@ orchestration/
 # OpenCode Symlinks (generated, point to ~/.config/opencode)
 workspace/docs/global
 workspace/scripts/global
+.opencode/workspace
+.opencode/skills
+.opencode/agents
+.opencode/commands
 agent
 skill
 command
