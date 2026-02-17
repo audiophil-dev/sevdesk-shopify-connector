@@ -12,18 +12,7 @@ workspace/scripts/global
 .opencode/skills
 .opencode/agents
 .opencode/commands
-agent
-skill
-command
-AGENTS.md
-.github/agents
-.github/chatmodes
-.github/prompts
-.github/architect.chatmode.md
-.github/ask.chatmode.md
-.github/code.chatmode.md
-.github/debug.chatmode.md
-.github/AGENTS.md
+.opencode/AGENTS.md
 
 # Logs
 logs/
