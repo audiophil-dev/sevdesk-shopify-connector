@@ -6,8 +6,8 @@ workspace/memory/taskRegistry.md
 orchestration/
 
 # OpenCode Symlinks (generated, point to ~/.config/opencode)
-docs/global
-scripts/global
+workspace/docs/global
+workspace/scripts/global
 agent
 skill
 command
