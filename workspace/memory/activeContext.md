@@ -13,9 +13,10 @@ Research phase: Understanding Shopify and Sevdesk integration requirements, API 
 None currently
 
 ## Recent Activity
+- [2026-02-17 18:16] Workspace migration completed - docs/ and scripts/ moved into workspace/, all OpenCode symlinks created
+- [2026-02-17 18:14] Restructured project for volatility-based documentation organization
 - [2026-02-17] Project initialized with OpenCode infrastructure
-- [2026-02-17] Starting research phase for Shopify-Sevdesk integration
 
 ---
 
-**Last Updated**: 2026-02-17 18:12:37
+**Last Updated**: 2026-02-17 18:16:00 (workspace migration completed)

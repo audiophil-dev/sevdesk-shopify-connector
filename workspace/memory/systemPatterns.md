@@ -5,20 +5,36 @@
 ## Project Structure
 
 ```
-docs/
-├── global/                 # Symlink: Shared OpenCode documentation
-├── knowledge/              # Stable reference material (low volatility)
-│   ├── market/            # Market research, Sevdesk ecosystem
-│   ├── business/          # Business model, pricing
-│   ├── technical/         # API research, technical deep-dives
-│   └── research/          # Raw data, research artifacts
-├── planning/              # Active plans and strategy (medium volatility)
-│   └── integration-architecture-spec.md  # Shopify-Sevdesk integration design
-└── tracking/              # Progress tracking (high volatility)
-    ├── timeline.md
-    ├── milestones.md
-    └── sprints/
+workspace/
+├── memory/                 # Agent context (persistent across sessions)
+│   ├── productContext.md
+│   ├── activeContext.md
+│   ├── systemPatterns.md   (this file)
+│   ├── decisionLog.md
+│   ├── progress.md
+│   └── taskRegistry.md     (git-ignored)
+├── docs/                   # All project documentation
+│   ├── global/             # Symlink → ~/.config/opencode/workspace/docs/global
+│   ├── knowledge/          # Stable reference material (low volatility)
+│   │   ├── market/         # Market research, Sevdesk ecosystem
+│   │   ├── business/       # Business model, pricing
+│   │   ├── technical/      # API research, technical deep-dives
+│   │   └── research/       # Raw data, research artifacts
+│   ├── planning/           # Active plans and strategy (medium volatility)
+│   │   └── integration-architecture-spec.md  # Shopify-Sevdesk integration design
+│   └── tracking/           # Progress tracking (high volatility)
+│       ├── timeline.md
+│       ├── milestones.md
+│       └── sprints/
+└── scripts/                # Utility scripts
+    └── global/             # Symlink → ~/.config/opencode/scripts/global
 ```
+
+**OpenCode Integration**:
+- `AGENTS.md` → symlink to ~/.config/opencode/AGENTS.md
+- `.github/agents/` → symlink to ~/.config/opencode/.github/agents
+- `.github/chatmodes/` → symlink to ~/.config/opencode/.github/chatmodes
+- `.github/prompts/` → symlink to ~/.config/opencode/.github/prompts
 
 ## Document Ownership
 
@@ -26,8 +42,8 @@ docs/
 |----------|-------|---------|
 | `docs/knowledge/technical/shopify-api-research.md` | @technology-researcher | Shopify API capabilities |
 | `docs/knowledge/technical/sevdesk-api-research.md` | @technology-researcher | Sevdesk API documentation |
-| `docs/planning/integration-architecture-spec.md` | @software-architect | Architecture decisions |
-| `docs/tracking/timeline.md` | @planning-collaborator | Development timeline |
+| `workspace/docs/planning/integration-architecture-spec.md` | @software-architect | Architecture decisions |
+| `workspace/docs/tracking/timeline.md` | @planning-collaborator | Development timeline |
 
 ## Architecture Overview
 [TBD - To be determined during research phase]
@@ -107,4 +123,4 @@ docs/
 
 ---
 
-**Last Updated**: 2026-02-17 18:12:37
+**Last Updated**: 2026-02-17 18:16:00 (workspace migration completed)
