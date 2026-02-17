@@ -1,8 +1,9 @@
 # OpenCode Runtime State
 .worktrees/
 handovers/
-memory-bank/taskRegistry.md
+workspace/memory/taskRegistry.md
 .opencode-README-section.md
+orchestration/
 
 # OpenCode Symlinks (generated, point to ~/.config/opencode)
 docs/global

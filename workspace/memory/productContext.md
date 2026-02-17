@@ -20,11 +20,17 @@ When a payment is received in Shopify, automatically send a confirmation email t
 ### Repository Structure
 ```
 sevdesk-shopify-connector/
-├── src/           # Source code
-├── tests/         # Test files
-├── docs/          # Documentation (symlinked to OpenCode)
-├── scripts/       # Build and utility scripts
-└── memory-bank/   # OpenCode context files
+├── src/                    # Source code
+├── tests/                  # Test files
+├── docs/
+│   ├── global/            # Symlink to OpenCode shared docs
+│   ├── knowledge/         # Stable reference (research, market, business)
+│   ├── planning/          # Active plans and architecture docs
+│   └── tracking/          # Progress tracking (sprints, timeline)
+├── workspace/memory/       # OpenCode agent context files
+├── scripts/global/         # Symlink to OpenCode scripts
+├── orchestration/          # Multi-session coordination artifacts
+└── .worktrees/             # Isolated git worktrees for agents
 ```
 
 ## Success Metrics
