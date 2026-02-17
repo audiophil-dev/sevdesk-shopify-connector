@@ -1,0 +1,33 @@
+# OpenCode Runtime State
+.worktrees/
+handovers/
+plans/
+memory-bank/taskRegistry.md
+.opencode-README-section.md
+
+# OpenCode Symlinks (generated, point to ~/.config/opencode)
+docs/global
+scripts/global
+agent
+skill
+command
+AGENTS.md
+.github/agents
+.github/chatmodes
+.github/prompts
+.github/architect.chatmode.md
+.github/ask.chatmode.md
+.github/code.chatmode.md
+.github/debug.chatmode.md
+.github/AGENTS.md
+
+# Logs
+logs/
+*.log
+
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
