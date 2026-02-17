@@ -12,23 +12,24 @@
 - [2026-02-17] Risk assessment completed (Shopify, Sevdesk, hosting, security)
 - [2026-02-17] Hosting decision: Uberspace (EUR 6-9/month, no cold starts)
 - [2026-02-17] Implementation guide created for Uberspace deployment
+- [2026-02-17] Technical specification written (A1-tech-spec.md)
+- [2026-02-17] Phase 1 implementation plan created (A2-phase1-plan.md)
+- [2026-02-17] Key architectural decisions finalized in decision log
 
 ## In Progress
-- None - research phase complete
+- Phase 1 implementation (assigned to @backend-specialist) - webhook infrastructure
 
 ## Next
-- Create custom app in Shopify Admin
-- Set up Uberspace account (first month free)
-- Implement webhook handlers with HMAC verification
-- Implement idempotency key tracking
-- Implement Sevdesk system version detection
-- Deploy to Uberspace
-- Register Shopify webhooks
-- Test with sample orders
+- Execute Phase 1 tasks 1-11 (webhook infrastructure, 12-24 hours)
+- Code review Phase 1 implementation
+- Manual testing with Shopify sandbox
+- Phase 2 planning: reconciliation and retry logic
+- Uberspace account setup (Phase 3)
+- Deployment to Uberspace (Phase 3)
 
 ## Blocked
 None
 
 ---
 
-**Last Updated**: 2026-02-17 21:45:00
+**Last Updated**: 2026-02-17 22:15:00
