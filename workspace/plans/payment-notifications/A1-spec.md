@@ -2,24 +2,24 @@
 
 **Document Type**: Technical Specification  
 **Project**: sevdesk-shopify-connector  
-**Date**: 2026-02-17  
-**Status**: Ready for Implementation Planning  
-**Revision**: 1.0
+**Date**: 2026-02-20  
+**Status**: Ready for Implementation  
+**Revision**: 2.0
 
 ---
 
 ## Executive Summary
 
-This specification defines the technical architecture for a payment notification system that monitors Sevdesk payment status and sends automated customer emails via Shopify. The system implements Sevdesk → Shopify data flow with payment confirmations and overdue reminders, webhook-first architecture with polling fallback, and deployment on Uberspace for guaranteed availability.
+This specification defines the technical architecture for a payment notification system that monitors Sevdesk payment status and sends automated customer emails via Shopify. The system implements Sevdesk → Shopify data flow using a polling-based approach (works locally without fixed IP), with payment confirmations and overdue reminders.
 
 **Key Characteristics**:
-- Real-time payment notifications via Sevdesk webhooks (<5 min latency)
+- Polling-based payment detection (works locally, no fixed IP needed)
 - Automatic customer emails sent via Shopify when payment received
 - Daily overdue invoice check with payment reminder emails
 - Optional: Shopify order → Sevdesk invoice sync (Phase 2)
 - Zero duplicate notifications through idempotency
 - Monthly cost: EUR 6-9 (hosting)
-- Development effort: 12-20 hours for core implementation
+- Development effort: 12-16 hours for core implementation
 
 ---
 
@@ -28,21 +28,16 @@ This specification defines the technical architecture for a payment notification
 ### 1.1 High-Level Data Flow
 
 ```
-Sevdesk (Payment Received)
-    ↓ (webhook: payment received)
-├→ Webhook Handler (Node.js Express)
-│  ├→ HMAC Verification
-│  ├→ Idempotency Check
-│  └→ Find matching Shopify order
+Polling Job (every 60 seconds)
+├→ Query Sevdesk for recently paid invoices
+├→ For each paid invoice:
+│   ├→ Check notification_history (idempotency)
+│   ├→ Find matching Shopify order by customer email
+│   ├→ Update Shopify order status to "paid"
+│   ├→ Trigger customer email via Shopify
+│   └→ Record notification in database
     ↓
-├→ Payment Processor
-│  ├→ Update Shopify order status to "paid"
-│  ├→ Send payment confirmation email via Shopify
-│  ├→ Track notification in PostgreSQL
-│  └→ Handle retries and circuit breaker
-    ↓
-├→ Customer
-    Payment Confirmation Email Sent ✓
+Customer receives payment confirmation email ✓
 
 Daily Overdue Check (cron job)
 ├→ Query Sevdesk for overdue invoices
@@ -60,14 +55,14 @@ Optional: Shopify → Sevdesk (Phase 2)
 
 | Component | Technology | Purpose | Notes |
 |-----------|-----------|---------|-------|
-| **Web Server** | Node.js + Express | Webhook endpoint, HTTP handler | Single-threaded sufficient |
-| **API Client** | @shopify/shopify-api | Shopify API calls (webhooks, orders) | Official SDK, 263K npm downloads |
-| **API Client** | axios (or node-fetch) | Sevdesk API calls (invoices) | Sevdesk has no official SDK |
-| **Database** | PostgreSQL 14+ | State tracking, sync log, dedup | Included with Uberspace |
-| **Job Scheduler** | node-cron (or supervisord) | Reconciliation polling job | 5-10 min intervals |
-| **Error Handling** | Sentry (free tier 5K/month) | Error tracking and alerting | Optional but recommended |
+| **Server** | Node.js + Express | HTTP server, health checks | Single-threaded sufficient |
+| **Poller** | node-cron or setInterval | Check Sevdesk for payments | 60 second intervals |
+| **API Client** | Shopify GraphQL | Order lookup and update | Official GraphQL Admin API |
+| **API Client** | axios or node-fetch | Sevdesk API calls | Sevdesk has no official SDK |
+| **Database** | PostgreSQL 14+ | Notification history, dedup | Included with Uberspace |
+| **Error Handling** | Sentry (free tier) | Error tracking | Optional but recommended |
 | **Deployment** | Uberspace (EUR 6-9/month) | Hosting platform | Always-on, Germany-based |
-| **Process Manager** | supervisord | Ensure node app always running | Included with Uberspace |
+| **Process Manager** | supervisord | Ensure app always running | Included with Uberspace |
 
 ### 1.3 Data Models
 

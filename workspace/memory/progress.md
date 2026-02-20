@@ -21,6 +21,10 @@
 - [2026-02-17] Added payment overdue notification feature
 - [2026-02-17] Added customer email sending to payment flow
 - [2026-02-17] Updated database schema with notification_history table
+- [2026-02-20] Moved spec/plan files to AlignFirst folder structure
+- [2026-02-20] Created A0-prerequisites.md (manual setup checklist)
+- [2026-02-20] Split A2-plan into A2, A3, A4 (smaller focused plans)
+- [2026-02-20] Changed from webhook-based to polling-based (works locally)
 
 ## In Progress
 - Phase 1 implementation (assigned to @backend-specialist) - webhook infrastructure

@@ -1,15 +1,13 @@
 # Active Context: Current Work
 
 ## Current Focus
-[2026-02-17 22:45] - CRITICAL architecture correction: Primary flow is Sevdesk → Shopify (payment notifications with emails), not Shopify → Sevdesk. Added payment overdue notifications. Updated all documentation and diagrams. Ready for implementation with correct business requirements.
+[2026-02-20 11:00] - Planning restructured. Created A0-prerequisites.md for manual setup. Split implementation into 3 focused plans: A2 (foundation/polling), A3 (Shopify integration), A4 (testing/docs). Changed to polling-based approach for local development. User needs to complete A0-prerequisites before implementation can begin.
 
 ## Immediate Goals
-- Create custom app in Shopify Admin
-- Set up Uberspace hosting account
-- Implement Sevdesk webhook handlers for payment notifications
-- Implement daily overdue invoice check
-- Send customer emails via Shopify API
-- Deploy to Uberspace
+- User completes A0-prerequisites.md (Shopify app, Sevdesk API key, local PostgreSQL)
+- Execute A2-plan.md (project foundation)
+- Execute A3-plan.md (Shopify integration)
+- Execute A4-plan.md (testing & documentation)
 
 ## Open Blockers
 None currently
