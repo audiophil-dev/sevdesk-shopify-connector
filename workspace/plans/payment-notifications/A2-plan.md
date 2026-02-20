@@ -30,6 +30,7 @@ This plan establishes the project foundation: Node.js/TypeScript setup, Express 
 
 ## Acceptance Criteria
 
+- [ ] AC0: PostgreSQL running, database created, .env files configured
 - [ ] AC1: `npm install` succeeds without errors
 - [ ] AC2: `npm run dev` starts server on port 3000
 - [ ] AC3: `GET /health` returns 200 OK
@@ -45,6 +46,31 @@ This plan establishes the project foundation: Node.js/TypeScript setup, Express 
 ---
 
 ## Implementation Tasks
+
+### Task 0: Environment Setup (15 min)
+
+**What**: Configure development environment with .env files and PostgreSQL
+
+**Steps**:
+1. Ensure PostgreSQL is installed and running
+2. Create database: `createdb sevdesk_sync`
+3. Create database user: `psql -c "CREATE USER sevdesk_dev WITH PASSWORD 'dev'"`
+4. Copy `.env.development` to `.env`: `cp .env.development .env`
+5. Update DATABASE_URL if using different PostgreSQL credentials
+6. Verify connection: `psql $DATABASE_URL -c "SELECT 1"`
+
+**Environment Files** (pre-created):
+- `.env.example` - Template with no secrets (commit to git)
+- `.env.development` - Local dev settings (DO NOT commit)
+- `.env.production` - Uberspace settings (DO NOT commit)
+- `.env.test` - Test settings (DO NOT commit)
+
+**Verification**:
+- [ ] `echo $DATABASE_URL` shows correct connection string
+- [ ] PostgreSQL connection works
+- [ ] .env file loaded (all variables available to app)
+
+---
 
 ### Task 1: Project Initialization (30 min)
 
