@@ -48,7 +48,8 @@ export class SevdeskClient {
   }
 
   async getPaidInvoices(since?: Date): Promise<SevdeskInvoice[]> {
-    let endpoint = '/Invoice?status=paid';
+    // Sevdesk uses numeric status codes: 1000 = Paid
+    let endpoint = '/Invoice?status=1000';
     
     if (since) {
       const dateStr = since.toISOString().split('T')[0];

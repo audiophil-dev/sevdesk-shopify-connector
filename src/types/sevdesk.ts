@@ -11,8 +11,10 @@ export interface SevdeskInvoice {
 
 export interface SevdeskContact {
   id: string;
-  email: string;
   name: string;
+  surename?: string;
+  emailPersonal?: string | null;
+  emailWork?: string | null;
 }
 
 export interface SevdeskInvoiceResponse {
