@@ -16,21 +16,22 @@ graph TD
     
     subgraph Uberspace ["Uberspace Hosting"]
         WebhookEndpoint[Webhook Endpoint]
-        Reconciliation[Reconciliation Job]
+        PaymentMonitor[Payment Monitor Job]
         Database[(PostgreSQL)]
     end
     style Uberspace fill:#ffffff,stroke:#000000,stroke-width:2px
     
-    Shopify -- "1. Order Paid Event" --> WebhookEndpoint
-    WebhookEndpoint -- "2. Create Invoice" --> Sevdesk
-    WebhookEndpoint -- "3. Log Sync State" --> Database
-    Reconciliation -- "4. Poll Orders" --> Shopify
-    Reconciliation -- "5. Retry Failed" --> Sevdesk
-    Reconciliation -- "6. Update State" --> Database
+    Sevdesk -- "1. Payment Received" --> WebhookEndpoint
+    WebhookEndpoint -- "2. Update Order" --> Shopify
+    WebhookEndpoint -- "3. Send Email" --> Shopify
+    WebhookEndpoint -- "4. Log State" --> Database
+    PaymentMonitor -- "5. Check Overdue" --> Sevdesk
+    PaymentMonitor -- "6. Send Reminder" --> Shopify
+    PaymentMonitor -- "7. Log State" --> Database
     
     %% Classes
     class Shopify,Sevdesk software;
-    class WebhookEndpoint,Reconciliation software;
+    class WebhookEndpoint,PaymentMonitor software;
     class Database files;
     
     %% Class Definitions
@@ -40,70 +41,71 @@ graph TD
 
 The diagram illustrates the core system flow of the **Shopify-Sevdesk Connector**:
 
-- `Shopify Store API`: Triggers order/paid webhook events
-- `Webhook Endpoint`: Receives webhooks, creates invoices (real-time)
-- `Reconciliation Job`: Polls for missed orders, retries failures (5-10 min cycle)
-- `Sevdesk API`: Invoice and contact management
-- `PostgreSQL`: Tracks sync state, idempotency, retry counts
+- `Sevdesk API`: Triggers payment received events, provides invoice status
+- `Webhook Endpoint`: Receives payment notifications, updates Shopify orders, sends emails (real-time)
+- `Payment Monitor Job`: Daily check for overdue invoices, sends reminder emails
+- `Shopify API`: Order updates, customer email sending
+- `PostgreSQL`: Tracks sync state, notification history, prevents duplicates
 
 ---
 
-## Phase 1: Webhook Processing Flow
+## Phase 1: Payment Notification Flow
 
 ```mermaid
 graph TD
-    %% Detailed Webhook Flow
+    %% Detailed Payment Notification Flow
     
-    subgraph Shopify ["Shopify"]
-        OrderPaid[Order Paid Event]
+    subgraph Sevdesk ["Sevdesk"]
+        PaymentReceived[Payment Received Event]
     end
-    style Shopify fill:#ffffff,stroke:#000000,stroke-width:2px
+    style Sevdesk fill:#ffffff,stroke:#000000,stroke-width:2px
     
     subgraph WebhookHandler ["Webhook Handler"]
         Receive[Receive POST]
         HMAC[HMAC Verification]
         Dedup[Deduplication Check]
-        Parse[Parse Order Data]
+        Parse[Parse Payment Data]
         State[Record Processing State]
     end
     style WebhookHandler fill:#ffffff,stroke:#000000,stroke-width:2px
     
-    subgraph SevdeskIntegration ["Sevdesk Integration"]
-        FindContact[Find/Create Contact]
-        CreateInvoice[Create Invoice]
-        UpdateState[Update Sync State]
+    subgraph ShopifyIntegration ["Shopify Integration"]
+        FindOrder[Find Shopify Order]
+        UpdateStatus[Update Order Status]
+        SendEmail[Send Payment Email]
     end
-    style SevdeskIntegration fill:#ffffff,stroke:#000000,stroke-width:2px
+    style ShopifyIntegration fill:#ffffff,stroke:#000000,stroke-width:2px
     
     subgraph Database ["Database"]
         SyncState[(sync_state table)]
     end
     style Database fill:#ffffff,stroke:#000000,stroke-width:2px
     
-    OrderPaid --> Receive
+    PaymentReceived --> Receive
     Receive --> HMAC
     HMAC -- "Valid" --> Dedup
     HMAC -- "Invalid" --> Reject403[Return 403]
     Dedup -- "New" --> Parse
     Dedup -- "Duplicate" --> Return200[Return 200 OK]
     Parse --> State
-    State --> FindContact
-    FindContact --> CreateInvoice
-    CreateInvoice --> UpdateState
-    UpdateState --> SyncState
-    UpdateState --> Success200[Return 200 OK]
+    State --> FindOrder
+    FindOrder --> UpdateStatus
+    UpdateStatus --> SendEmail
+    SendEmail --> SyncState
+    SendEmail --> Success200[Return 200 OK]
     
     %% Error Paths
     Parse -- "Invalid" --> Return400[Return 400]
-    FindContact -- "Error" --> LogError[Log Error]
-    CreateInvoice -- "Error" --> LogError
+    FindOrder -- "Error" --> LogError[Log Error]
+    UpdateStatus -- "Error" --> LogError
+    SendEmail -- "Error" --> LogError
     LogError --> SyncState
     LogError --> Return202[Return 202 Accepted]
     
     %% Classes
-    class OrderPaid software;
+    class PaymentReceived software;
     class Receive,HMAC,Dedup,Parse,State software;
-    class FindContact,CreateInvoice,UpdateState software;
+    class FindOrder,UpdateStatus,SendEmail software;
     class SyncState files;
     class Reject403,Return200,Return400,Return202,Success200,LogError software;
     
@@ -112,20 +114,90 @@ graph TD
     classDef files fill:#ffffff,stroke:#19ffb5,stroke-width:3px,color:#000;
 ```
 
-The diagram illustrates the **Phase 1 Webhook Processing Flow**:
+The diagram illustrates the **Phase 1 Payment Notification Flow**:
 
 - `HMAC Verification`: Validates webhook authenticity (prevents spoofing)
-- `Deduplication Check`: Uses X-Shopify-Webhook-Id to prevent duplicate processing
-- `Parse Order Data`: Extracts customer email, line items, total price
-- `Find/Create Contact`: Ensures customer exists in Sevdesk
-- `Create Invoice`: Creates invoice with line items from order
-- `Update Sync State`: Records success/failure in PostgreSQL for reconciliation
+- `Deduplication Check`: Uses unique payment ID to prevent duplicate processing
+- `Parse Payment Data`: Extracts invoice ID, amount, customer info
+- `Find Shopify Order`: Matches Sevdesk invoice to Shopify order
+- `Update Order Status`: Marks order as paid in Shopify
+- `Send Payment Email`: Sends confirmation email to customer via Shopify
 
 **Error Handling**:
 - Invalid HMAC → 403 Forbidden (security event logged)
 - Duplicate webhook → 200 OK (idempotency)
 - Parse error → 400 Bad Request
-- Sevdesk API error → 202 Accepted + logged for retry
+- Shopify API error → 202 Accepted + logged for retry
+
+---
+
+## Payment Overdue Notification Flow
+
+```mermaid
+graph TD
+    %% Payment Overdue Notification Flow
+    
+    subgraph CronJob ["Daily Overdue Check"]
+        Start[Job Starts Daily]
+        QuerySevdesk[Query Sevdesk for Overdue Invoices]
+    end
+    style CronJob fill:#ffffff,stroke:#000000,stroke-width:2px
+    
+    subgraph Processing ["Overdue Processing"]
+        Filter[Filter Unnotified Invoices]
+        CheckDB[Check Notification History]
+        SendReminder[Send Payment Reminder Email]
+        LogNotification[Log Notification Sent]
+    end
+    style Processing fill:#ffffff,stroke:#000000,stroke-width:2px
+    
+    subgraph External ["External Services"]
+        Sevdesk[Sevdesk API]
+        Shopify[Shopify Email API]
+    end
+    style External fill:#ffffff,stroke:#000000,stroke-width:2px
+    
+    subgraph Database ["Database"]
+        NotificationHistory[(notification_history table)]
+    end
+    style Database fill:#ffffff,stroke:#000000,stroke-width:2px
+    
+    Start --> QuerySevdesk
+    QuerySevdesk --> Sevdesk
+    Sevdesk --> Filter
+    Filter --> CheckDB
+    CheckDB --> NotificationHistory
+    CheckDB -- "Not Notified" --> SendReminder
+    CheckDB -- "Already Notified" --> Skip[Skip Invoice]
+    SendReminder --> Shopify
+    Shopify --> LogNotification
+    LogNotification --> NotificationHistory
+    
+    %% Classes
+    class Start,QuerySevdesk software;
+    class Filter,CheckDB,SendReminder,LogNotification,Skip software;
+    class Sevdesk,Shopify software;
+    class NotificationHistory files;
+    
+    %% Class Definitions
+    classDef software fill:#ffffff,stroke:#ff6d00,stroke-width:3px,color:#000;
+    classDef files fill:#ffffff,stroke:#19ffb5,stroke-width:3px,color:#000;
+```
+
+The diagram illustrates the **Payment Overdue Notification Flow**:
+
+- `Daily Overdue Check`: Cron job runs once per day
+- `Query Sevdesk`: Fetch invoices past due date
+- `Filter Unnotified`: Skip invoices already reminded
+- `Check Notification History`: Prevent duplicate reminders
+- `Send Payment Reminder Email`: Customer receives overdue notice via Shopify
+- `Log Notification Sent`: Track all sent reminders
+
+**Overdue Logic**:
+- Invoice due date passed → Trigger notification
+- Check if reminder already sent (avoid spam)
+- Send professional payment reminder
+- Log for audit trail
 
 ---
 
@@ -145,12 +217,22 @@ erDiagram
         TIMESTAMP updated_at
         VARCHAR webhook_id UK
     }
+    
+    notification_history {
+        SERIAL id PK
+        VARCHAR sevdesk_invoice_id FK
+        VARCHAR notification_type
+        VARCHAR customer_email
+        TIMESTAMP sent_at
+        VARCHAR shopify_message_id
+        TEXT error_message
+    }
 ```
 
 The **sync_state** table tracks the synchronization status of each order:
 
 - `shopify_order_id`: Unique Shopify order ID (gid://shopify/Order/...)
-- `webhook_id`: X-Shopify-Webhook-Id header (idempotency key)
+- `webhook_id`: Unique webhook ID (idempotency key)
 - `sync_status`: `pending`, `processing`, `completed`, `failed`
 - `sevdesk_contact_id`: Sevdesk contact ID after customer lookup
 - `sevdesk_invoice_id`: Sevdesk invoice ID after creation
@@ -159,9 +241,20 @@ The **sync_state** table tracks the synchronization status of each order:
 - `created_at`: When webhook first received
 - `updated_at`: Last status change
 
+The **notification_history** table tracks all customer notifications:
+
+- `sevdesk_invoice_id`: Invoice that triggered notification
+- `notification_type`: `payment_received`, `payment_overdue`
+- `customer_email`: Email recipient
+- `sent_at`: When notification was sent
+- `shopify_message_id`: Shopify email message ID for tracking
+- `error_message`: Error details if send failed
+
 **Indexes**:
 - `idx_sync_status`: Fast filtering by status (reconciliation)
 - `idx_updated_at`: Time-based queries (find stale records)
+- `idx_notification_invoice`: Find notifications by invoice
+- `idx_notification_type`: Filter by notification type
 
 **Unique Constraints**:
 - `shopify_order_id`: Prevent duplicate orders

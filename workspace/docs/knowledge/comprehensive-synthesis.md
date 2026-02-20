@@ -14,9 +14,9 @@ This document synthesizes all research, architectural decisions, implementation 
 
 ### Project Overview
 
-**Business Goal**: Automate the order-to-invoice workflow for a small German e-commerce business using Shopify and Sevdesk accounting software, reducing manual data entry and ensuring accurate financial records.
+**Business Goal**: Automate payment notification workflow for a small German e-commerce business using Shopify and Sevdesk accounting software, sending automated emails to customers when payments are received or overdue.
 
-**Technical Approach**: Build a custom Shopify app (not public app) deployed on Uberspace that receives Shopify webhooks, creates Sevdesk invoices via API, and optionally syncs payment status back to Shopify.
+**Technical Approach**: Build a custom Shopify app (not public app) deployed on Uberspace that monitors Sevdesk payment status, sends customer emails via Shopify, and optionally syncs Shopify orders to Sevdesk invoices.
 
 **Key Decisions**:
 - Custom Shopify app (no approval process needed)
@@ -41,10 +41,10 @@ This document synthesizes all research, architectural decisions, implementation 
 | Phase | Duration | Deliverable |
 |-------|----------|-------------|
 | 1. Setup | 2-4 hours | Custom app created, deployed to Uberspace |
-| 2. Shopify → Sevdesk | 4-6 hours | Orders sync to Sevdesk invoices |
-| 3. Sevdesk → Shopify | 4-6 hours | Payments update Shopify orders (optional) |
+| 2. Sevdesk → Shopify | 4-6 hours | Payment notifications with customer emails |
+| 3. Shopify → Sevdesk | 4-6 hours | Orders sync to Sevdesk invoices (optional) |
 | 4. Polish | 2-4 hours | Error handling, logging, testing |
-| **Total** | **12-20 hours** | Working bidirectional sync |
+| **Total** | **12-20 hours** | Working payment notification system |
 
 ### Risk Level: Medium
 
@@ -130,21 +130,22 @@ graph TD
     
     subgraph Uberspace ["Uberspace Hosting"]
         WebhookEndpoint[Webhook Endpoint]
-        Reconciliation[Reconciliation Job]
+        PaymentMonitor[Payment Monitor Job]
         Database[(PostgreSQL)]
     end
     style Uberspace fill:#ffffff,stroke:#000000,stroke-width:2px
     
-    Shopify -- "1. Order Paid Event" --> WebhookEndpoint
-    WebhookEndpoint -- "2. Create Invoice" --> Sevdesk
-    WebhookEndpoint -- "3. Log Sync State" --> Database
-    Reconciliation -- "4. Poll Orders" --> Shopify
-    Reconciliation -- "5. Retry Failed" --> Sevdesk
-    Reconciliation -- "6. Update State" --> Database
+    Sevdesk -- "1. Payment Received" --> WebhookEndpoint
+    WebhookEndpoint -- "2. Update Order" --> Shopify
+    WebhookEndpoint -- "3. Send Email" --> Shopify
+    WebhookEndpoint -- "4. Log State" --> Database
+    PaymentMonitor -- "5. Check Overdue" --> Sevdesk
+    PaymentMonitor -- "6. Send Reminder" --> Shopify
+    PaymentMonitor -- "7. Log State" --> Database
     
     %% Classes
     class Shopify,Sevdesk software;
-    class WebhookEndpoint,Reconciliation software;
+    class WebhookEndpoint,PaymentMonitor software;
     class Database files;
     
     %% Class Definitions
@@ -154,15 +155,31 @@ graph TD
 
 The diagram illustrates the core system flow:
 
-- `Shopify Store API`: Triggers order/paid webhook events
-- `Webhook Endpoint`: Receives webhooks, creates invoices (real-time)
-- `Reconciliation Job`: Polls for missed orders, retries failures (5-10 min cycle)
-- `Sevdesk API`: Invoice and contact management
-- `PostgreSQL`: Tracks sync state, idempotency, retry counts
+- `Sevdesk API`: Triggers payment received events, provides invoice status
+- `Webhook Endpoint`: Receives payment notifications, updates Shopify orders, sends emails (real-time)
+- `Payment Monitor Job`: Daily check for overdue invoices, sends reminder emails
+- `Shopify API`: Order updates, customer email sending
+- `PostgreSQL`: Tracks sync state, notification history, prevents duplicates
 
 ### 1.3 Data Flow
 
-**Shopify → Sevdesk (Primary Flow)**:
+**Sevdesk → Shopify (Primary Flow)**:
+1. Customer pays via bank transfer (outside Shopify)
+2. Payment recorded in Sevdesk
+3. Sevdesk sends webhook or app polls for payment status
+4. Custom app receives notification
+5. App updates Shopify order financial status to "paid"
+6. App sends payment confirmation email to customer via Shopify
+
+**Payment Overdue Notifications (Primary Flow)**:
+1. App runs daily check for overdue invoices
+2. Query Sevdesk for invoices past due date
+3. For each overdue invoice:
+   - Check if notification already sent (avoid duplicates)
+   - Send payment reminder email to customer via Shopify
+   - Log notification in database
+
+**Shopify → Sevdesk (Optional Flow)**:
 1. Customer places order in Shopify
 2. Shopify sends `orders/create` or `orders/paid` webhook
 3. Custom app receives webhook, verifies HMAC signature
@@ -170,13 +187,6 @@ The diagram illustrates the core system flow:
 5. App finds or creates Sevdesk contact by customer email
 6. App creates Sevdesk invoice with order details
 7. App stores sync state in PostgreSQL
-
-**Sevdesk → Shopify (Optional Flow)**:
-1. Customer pays via bank transfer (outside Shopify)
-2. Payment recorded in Sevdesk
-3. Sevdesk sends webhook (if configured)
-4. Custom app receives notification
-5. App updates Shopify order financial status to "paid"
 
 ---
 

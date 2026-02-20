@@ -1,12 +1,14 @@
 # Active Context: Current Work
 
 ## Current Focus
-[2026-02-17 22:35] - System overview diagram integrated into comprehensive synthesis. Architecture documentation complete with proper Mermaid visualizations following Creative Tech standards. Planning phase fully complete. Ready for implementation.
+[2026-02-17 22:45] - CRITICAL architecture correction: Primary flow is Sevdesk → Shopify (payment notifications with emails), not Shopify → Sevdesk. Added payment overdue notifications. Updated all documentation and diagrams. Ready for implementation with correct business requirements.
 
 ## Immediate Goals
 - Create custom app in Shopify Admin
 - Set up Uberspace hosting account
-- Implement webhook handlers with HMAC verification
+- Implement Sevdesk webhook handlers for payment notifications
+- Implement daily overdue invoice check
+- Send customer emails via Shopify API
 - Deploy to Uberspace
 
 ## Open Blockers

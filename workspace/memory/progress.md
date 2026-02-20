@@ -17,6 +17,10 @@
 - [2026-02-17] Key architectural decisions finalized in decision log
 - [2026-02-17] Architecture diagrams created with Mermaid (Creative Tech standards)
 - [2026-02-17] System overview diagram integrated into comprehensive synthesis
+- [2026-02-17] CRITICAL: Corrected primary flow to Sevdesk → Shopify (not reverse)
+- [2026-02-17] Added payment overdue notification feature
+- [2026-02-17] Added customer email sending to payment flow
+- [2026-02-17] Updated database schema with notification_history table
 
 ## In Progress
 - Phase 1 implementation (assigned to @backend-specialist) - webhook infrastructure
