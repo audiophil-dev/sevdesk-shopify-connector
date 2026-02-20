@@ -5,44 +5,42 @@
 **Branch**: feature/payment-notifications  
 **Ticket**: payment-notifications  
 **Date**: 2026-02-20  
-**Status**: Ready for Implementation (partial - Shopify first)  
-**Revision**: 1.1  
-**Dependencies**: A0-prerequisites.md Phase 1A (Shopify credentials ready)
+**Status**: Ready for Implementation  
+**Revision**: 1.2  
+**Dependencies**: A0-prerequisites.md (all credentials ready)
 
 ---
 
 ## Executive Summary
 
-This plan establishes the project foundation: Node.js/TypeScript setup, Express server, PostgreSQL database, and Shopify integration. **Sevdesk integration is deferred** until API access is available.
+This plan establishes the project foundation: Node.js/TypeScript setup, Express server, PostgreSQL database, Shopify GraphQL client, Sevdesk API client, and polling mechanism.
 
 **Deliverables**:
 - Working Node.js/TypeScript project
 - Express server with health check
 - PostgreSQL database with schema
 - Shopify GraphQL client (client credentials grant)
-- Order lookup and update functionality
+- Sevdesk API client
+- Polling job for payment detection
 
-**Effort Estimate**: 3-4 hours (Shopify portion)  
-**Blockers**: Sevdesk API access pending (plan change needed)
+**Effort Estimate**: 5-6 hours  
+**Blockers**: None - all API credentials available
 
 ---
 
 ## Acceptance Criteria
 
-### Can Complete Now (Shopify)
 - [ ] AC1: `npm install` succeeds without errors
 - [ ] AC2: `npm run dev` starts server on port 3000
 - [ ] AC3: `GET /health` returns 200 OK
 - [ ] AC4: PostgreSQL tables created: `sync_state`, `notification_history`
 - [ ] AC5: Shopify token acquisition works (client credentials grant)
 - [ ] AC6: Shopify GraphQL client can query orders
-- [ ] AC7: TypeScript strict mode enabled, no compilation errors
-- [ ] AC8: `.env.example` created with all required variables
-
-### Deferred (Sevdesk - Blocked)
-- [ ] AC9: Sevdesk API client can fetch invoices
-- [ ] AC10: Polling job runs every 60 seconds
-- [ ] AC11: Polling job logs paid invoices found in Sevdesk
+- [ ] AC7: Sevdesk API client can fetch invoices
+- [ ] AC8: Polling job runs every 60 seconds (configurable)
+- [ ] AC9: Polling job logs paid invoices found in Sevdesk
+- [ ] AC10: TypeScript strict mode enabled, no compilation errors
+- [ ] AC11: `.env.example` created with all required variables
 
 ---
 
@@ -68,7 +66,8 @@ This plan establishes the project foundation: Node.js/TypeScript setup, Express 
   ├── config/
   ├── database/
   ├── clients/
-  │   └── shopify.ts
+  │   ├── shopify.ts
+  │   └── sevdesk.ts
   ├── services/
   ├── types/
   └── utils/
@@ -227,13 +226,58 @@ npm run dev
 
 ---
 
-### Task 5: Polling Job (DEFERRED - Sevdesk Blocked)
+### Task 5: Sevdesk API Client (1 hour)
 
-**Status**: Cannot implement until Sevdesk API access is available.
+**Description**: Create client to fetch invoice data from Sevdesk.
+
+**Checklist**:
+- [ ] Create `src/types/sevdesk.ts` with TypeScript interfaces
+- [ ] Create `src/clients/sevdesk.ts` with `SevdeskClient` class
+- [ ] Implement methods:
+  - `getInvoice(invoiceId: string): Promise<SevdeskInvoice>`
+  - `getPaidInvoices(since?: Date): Promise<SevdeskInvoice[]>`
+  - `getInvoiceContact(invoiceId: string): Promise<SevdeskContact>`
+- [ ] Add error handling for API failures
+- [ ] Add request logging
+
+**Types**:
+```typescript
+interface SevdeskInvoice {
+  id: string;
+  invoiceNumber: string;
+  status: string; // "paid", "unpaid", "overdue"
+  total: number;
+  currency: string;
+  invoiceDate: string;
+  dueDate: string;
+  contactId: string;
+}
+
+interface SevdeskContact {
+  id: string;
+  email: string;
+  name: string;
+}
+```
+
+**Files to Create**:
+- `src/types/sevdesk.ts`
+- `src/clients/sevdesk.ts`
+- `src/clients/sevdesk.test.ts`
+
+**Testing**:
+```bash
+# Manual test with real API
+curl -H "Authorization: api_key YOUR_KEY" https://my.sevdesk.de/api/v1/Invoice
+```
+
+---
+
+### Task 6: Polling Job (1 hour)
 
 **Description**: Create polling mechanism that checks Sevdesk for paid invoices.
 
-**Checklist** (when unblocked):
+**Checklist**:
 - [ ] Create `src/services/poller.ts`
 - [ ] Implement `startPolling()` function:
   - Runs on configurable interval (default: 60 seconds)
@@ -263,29 +307,28 @@ npm run dev
 
 ## Effort Breakdown
 
-| Task | Time | Status | Blocked? |
-|------|------|--------|----------|
-| 1. Project Initialization | 30 min | Not Started | No |
-| 2. Express Server | 45 min | Not Started | No |
-| 3. Database Schema | 45 min | Not Started | No |
-| 4. Shopify GraphQL Client | 1 hour | Not Started | No |
-| 5. Polling Job | 1 hour | Deferred | **Yes (Sevdesk)** |
-| **Total (Shopify)** | **3-4 hours** | - | - |
+| Task | Time | Status |
+|------|------|--------|
+| 1. Project Initialization | 30 min | Not Started |
+| 2. Express Server | 45 min | Not Started |
+| 3. Database Schema | 45 min | Not Started |
+| 4. Shopify GraphQL Client | 1 hour | Not Started |
+| 5. Sevdesk API Client | 1 hour | Not Started |
+| 6. Polling Job | 1 hour | Not Started |
+| **Total** | **5-6 hours** | - |
 
 ---
 
 ## Success Criteria
 
-### After Shopify Portion (Can Complete Now)
+After completing this plan:
 - [ ] Server runs locally without errors
 - [ ] Database tables exist
 - [ ] Can acquire Shopify access token via client credentials
 - [ ] Can query Shopify GraphQL API
-- [ ] Ready for A3-plan.md (Shopify order operations)
-
-### After Sevdesk Unblocked (Later)
 - [ ] Can fetch invoices from Sevdesk API
 - [ ] Polling job runs and logs paid invoices
+- [ ] Ready for A3-plan.md (Shopify order operations)
 
 ---
 
@@ -295,11 +338,10 @@ npm run dev
 - Order lookup by customer email
 - Order status update to "paid"
 - Email triggering
-
-**Note**: A3-plan.md can be started immediately after A2 Shopify portion is complete.
+- Payment processor integration
 
 ---
 
-**Plan Version**: 1.1  
+**Plan Version**: 1.2  
 **Created**: 2026-02-20  
-**Updated**: 2026-02-20 (added Shopify client, deferred Sevdesk)
+**Updated**: 2026-02-20 (Sevdesk API now available)

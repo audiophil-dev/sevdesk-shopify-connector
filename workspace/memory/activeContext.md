@@ -1,13 +1,13 @@
 # Active Context: Current Work
 
 ## Current Focus
-[2026-02-20 13:00] - Research complete. Shopify uses client credentials grant (token from Client ID + Secret, 24h expiry). GraphQL is beneficial. Plans updated: A0-prerequisites reflects current status (Shopify ready, Sevdesk blocked), A2-plan focuses on Shopify first. Ready to start implementation of Shopify portion while waiting for Sevdesk API access.
+[2026-02-20 13:15] - All API credentials now available. Plans updated: A0-prerequisites shows Sevdesk complete, A2-plan unblocked with full 6 tasks. Ready to start full implementation once Node.js and PostgreSQL are set up.
 
 ## Immediate Goals
-- User completes Node.js and PostgreSQL setup
-- Execute A2-plan.md Tasks 1-4 (Shopify focused)
+- User completes Node.js 20.x and PostgreSQL setup
+- Execute A2-plan.md (all 6 tasks - project foundation)
 - Execute A3-plan.md (Shopify order operations)
-- Add Sevdesk integration when API access available
+- Execute A4-plan.md (testing & documentation)
 
 ## Open Blockers
 None currently
