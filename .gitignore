@@ -1,27 +1,19 @@
-# OpenCode Runtime State
-.worktrees/
-handovers/
-workspace/memory/taskRegistry.md
-.opencode-README-section.md
-orchestration/
+# Dependencies
+node_modules/
 
-# OpenCode Symlinks (generated, point to ~/.config/opencode)
-workspace/docs/global
-workspace/scripts/global
-.opencode/workspace
-.opencode/skills
-.opencode/agents
-.opencode/commands
-.opencode/AGENTS.md
+# Build output
+dist/
+
+# Environment files
+.env
+.env.local
+.env.production
 
 # Logs
 logs/
 *.log
 
-# Dependencies
-node_modules/
-
-# Environment
-.env
-.env.local
+# OpenCode Runtime State
+.worktrees/
+handovers/
 .work-session-active
