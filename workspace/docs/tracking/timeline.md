@@ -14,10 +14,11 @@ Target completion milestones for the sevdesk-shopify-connector project.
 
 ### Phase 2: Implementation
 - Set up project infrastructure
-- Implement Shopify API client
-- Implement Sevdesk API client
-- Implement payment event listener
-- Implement email notification system
+- Implement Sevdesk webhook handler (payment received)
+- Implement Shopify order lookup and update
+- Implement customer email sending via Shopify
+- Implement daily overdue invoice check
+- Optional: Implement Shopify → Sevdesk order sync
 
 **Target**: 2-3 weeks
 

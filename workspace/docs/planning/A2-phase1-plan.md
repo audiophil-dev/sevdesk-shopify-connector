@@ -1,21 +1,22 @@
-# Implementation Plan: Phase 1 - Core Webhook Infrastructure
+# Implementation Plan: Phase 1 - Payment Notification System
 
 **Plan Type**: Implementation  
 **Assigned to**: @backend-specialist  
-**Branch**: feature/webhook-infrastructure  
+**Branch**: feature/payment-notifications  
 **Ticket**: PHASE1-001  
 **Date**: 2026-02-17  
 **Status**: Ready for Implementation  
-**Revision**: 1.0
+**Revision**: 2.0
 
 ---
 
 ## Executive Summary
 
-Phase 1 establishes the core webhook infrastructure for receiving and processing Shopify order/paid events. The deliverable is a production-ready webhook endpoint that:
-- Verifies HMAC signatures (security)
-- Prevents duplicate processing (idempotency)
-- Creates Sevdesk invoices from Shopify orders
+Phase 1 establishes the payment notification system for receiving Sevdesk payment events and sending customer emails via Shopify. The deliverable is a production-ready webhook endpoint that:
+- Receives Sevdesk payment notifications
+- Finds matching Shopify orders by customer email
+- Updates Shopify order status to "paid"
+- Sends payment confirmation emails to customers
 - Logs all operations for debugging
 - Includes 60%+ unit test coverage
 
@@ -27,13 +28,13 @@ Phase 1 establishes the core webhook infrastructure for receiving and processing
 
 ## Problem Statement
 
-Currently, when a Shopify order is paid, there is no automatic invoice creation in Sevdesk. Store owner must manually create invoices, causing:
-- Accounting delays (orders and invoices out of sync)
-- Data entry errors
-- Loss of transaction history
-- No audit trail of payment→invoice flow
+Currently, when a customer pays via bank transfer (outside Shopify), the payment is recorded in Sevdesk but:
+- Shopify order remains marked as "pending payment"
+- Customer receives no payment confirmation email
+- Store owner must manually update Shopify order status
+- No automated overdue payment reminders
 
-Phase 1 solves this by automatically creating Sevdesk invoices within seconds of payment.
+Phase 1 solves this by automatically updating Shopify orders and sending customer emails within seconds of payment recording in Sevdesk.
 
 ---
 
@@ -41,21 +42,21 @@ Phase 1 solves this by automatically creating Sevdesk invoices within seconds of
 
 ### Primary Criteria (Must Have)
 
-- [ ] AC1: Webhook endpoint accepts POST requests at `/webhooks/shopify/order-paid`
-- [ ] AC2: HMAC signature verification rejects unsigned/tampered requests with 403
-- [ ] AC3: Valid HMAC passes verification; request processing begins
-- [ ] AC4: Idempotency: identical webhook (same X-Shopify-Webhook-Id) processed only once
-- [ ] AC5: PostgreSQL `sync_state` table created with migration
-- [ ] AC6: Order parsed from webhook payload; customer email extracted
-- [ ] AC7: Contact created/found in Sevdesk by email
-- [ ] AC8: Invoice created in Sevdesk with line items from order
-- [ ] AC9: Sync state recorded in database with success/failure status
-- [ ] AC10: All operations logged with shopify_order_id and timestamp
-- [ ] AC11: Unit tests cover HMAC verification (3+ test cases)
-- [ ] AC12: Unit tests cover idempotency (duplicate webhook test)
-- [ ] AC13: Integration test: mock webhook → actual invoice creation
-- [ ] AC14: Error handling: malformed webhook returns 400 with explanation
-- [ ] AC15: Webhook endpoint returns 200 OK within 500ms (async processing if longer)
+- [ ] AC1: Webhook endpoint accepts POST requests at `/webhooks/sevdesk/payment-received`
+- [ ] AC2: Webhook payload parsed; invoice ID and customer email extracted
+- [ ] AC3: Idempotency: identical payment notification processed only once
+- [ ] AC4: PostgreSQL `sync_state` and `notification_history` tables created with migration
+- [ ] AC5: Shopify order found by customer email (GraphQL query)
+- [ ] AC6: Shopify order financial status updated to "paid"
+- [ ] AC7: Payment confirmation email sent to customer via Shopify
+- [ ] AC8: Notification recorded in notification_history table
+- [ ] AC9: All operations logged with sevdesk_invoice_id and timestamp
+- [ ] AC10: Unit tests cover order lookup (3+ test cases)
+- [ ] AC11: Unit tests cover idempotency (duplicate notification test)
+- [ ] AC12: Integration test: mock webhook → Shopify order update
+- [ ] AC13: Error handling: malformed webhook returns 400 with explanation
+- [ ] AC14: Webhook endpoint returns 200 OK within 500ms (async processing if longer)
+- [ ] AC15: Customer email not logged (GDPR compliance)
 
 ### Secondary Criteria (Nice To Have)
 
@@ -70,34 +71,29 @@ Phase 1 solves this by automatically creating Sevdesk invoices within seconds of
 ### 3.1 High-Level Flow
 
 ```
-POST /webhooks/shopify/order-paid
+POST /webhooks/sevdesk/payment-received
     ↓
 1. Parse JSON
     ↓
-2. Extract HMAC from X-Shopify-Hmac-SHA256 header
+2. Extract invoice_id and customer_email from payload
     ↓
-3. Verify HMAC against request body using SHOPIFY_WEBHOOK_SECRET
-    ├→ FAIL: Return 403, log security event
-    ├→ PASS: Continue
-    ↓
-4. Extract X-Shopify-Webhook-Id (deduplication key)
-    ↓
-5. Check database: is webhook_id already processed?
+3. Check notification_history: already sent?
     ├→ YES: Return 200 OK (idempotency)
     ├→ NO: Continue
     ↓
-6. Parse order payload
-    - shopify_order_id, customer email, total, line_items
+4. Create notification_history record: status = "processing"
     ↓
-7. Create sync_state record: status = "processing"
+5. Query Shopify GraphQL: find order by customer_email
+    ├→ NOT FOUND: Log error, return 202 (retry later)
+    ├→ FOUND: Continue with order_id
     ↓
-8. Async: Create/find contact in Sevdesk
+6. Update Shopify order: financial_status = "paid"
     ↓
-9. Async: Create invoice in Sevdesk
+7. Trigger Shopify order confirmation email
     ↓
-10. Update sync_state: status = "completed", sevdesk_invoice_id = "..."
+8. Update notification_history: status = "completed"
     ↓
-Return 200 OK (to Shopify, immediately, before Sevdesk calls if async)
+Return 200 OK (to Sevdesk)
 ```
 
 ### 3.2 Error Paths

@@ -10,14 +10,15 @@
 
 ## Executive Summary
 
-This specification defines the technical architecture for a real-time order and payment synchronization system between Shopify and Sevdesk. The system implements bidirectional data flow with payment confirmations via email, webhook-first architecture with polling fallback, and deployment on Uberspace for guaranteed availability.
+This specification defines the technical architecture for a payment notification system that monitors Sevdesk payment status and sends automated customer emails via Shopify. The system implements Sevdesk → Shopify data flow with payment confirmations and overdue reminders, webhook-first architecture with polling fallback, and deployment on Uberspace for guaranteed availability.
 
 **Key Characteristics**:
-- Real-time order sync via Shopify webhooks (<5 min latency)
-- Automatic Sevdesk invoice creation from Shopify orders
-- Payment confirmation emails sent by Shopify
-- Zero data loss through idempotency and duplicate detection
-- Monthly cost: EUR 6-9 (hosting) + optional email service
+- Real-time payment notifications via Sevdesk webhooks (<5 min latency)
+- Automatic customer emails sent via Shopify when payment received
+- Daily overdue invoice check with payment reminder emails
+- Optional: Shopify order → Sevdesk invoice sync (Phase 2)
+- Zero duplicate notifications through idempotency
+- Monthly cost: EUR 6-9 (hosting)
 - Development effort: 12-20 hours for core implementation
 
 ---
@@ -27,28 +28,32 @@ This specification defines the technical architecture for a real-time order and 
 ### 1.1 High-Level Data Flow
 
 ```
-Shopify Store
-    ↓ (webhook: orders/paid)
+Sevdesk (Payment Received)
+    ↓ (webhook: payment received)
 ├→ Webhook Handler (Node.js Express)
 │  ├→ HMAC Verification
 │  ├→ Idempotency Check
-│  └→ Message Queue (or direct processing)
+│  └→ Find matching Shopify order
     ↓
-├→ Order Processor
-│  ├→ Fetch complete order from Shopify GraphQL API
-│  ├→ Create/Find contact in Sevdesk
-│  ├→ Create invoice in Sevdesk
-│  ├→ Track sync state in PostgreSQL
+├→ Payment Processor
+│  ├→ Update Shopify order status to "paid"
+│  ├→ Send payment confirmation email via Shopify
+│  ├→ Track notification in PostgreSQL
 │  └→ Handle retries and circuit breaker
     ↓
-├→ Sevdesk
-    Invoice Created ✓
-    
-Polling Reconciliation (every 5-10 min)
-├→ Query recent Shopify orders
-├→ Compare with Sevdesk invoices
-├→ Identify missing/failed syncs
-└→ Retry with exponential backoff
+├→ Customer
+    Payment Confirmation Email Sent ✓
+
+Daily Overdue Check (cron job)
+├→ Query Sevdesk for overdue invoices
+├→ Check notification history (avoid duplicates)
+├→ Send payment reminder email via Shopify
+└→ Log notification in database
+
+Optional: Shopify → Sevdesk (Phase 2)
+├→ Shopify webhook: orders/paid
+├→ Create Sevdesk invoice
+└→ Track sync state
 ```
 
 ### 1.2 Component Architecture
@@ -121,101 +126,103 @@ CREATE TABLE sync_state (
   retry_count INT DEFAULT 0,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
-  webhook_id VARCHAR(50) -- X-Shopify-Webhook-Id for dedup
+  webhook_id VARCHAR(50) -- Unique webhook ID for dedup
 );
+
+CREATE TABLE notification_history (
+  id SERIAL PRIMARY KEY,
+  sevdesk_invoice_id VARCHAR(50) NOT NULL,
+  notification_type VARCHAR(30), -- payment_received, payment_overdue
+  customer_email VARCHAR(255),
+  sent_at TIMESTAMP DEFAULT NOW(),
+  shopify_message_id VARCHAR(100),
+  error_message TEXT
+);
+
+CREATE INDEX idx_notification_invoice ON notification_history(sevdesk_invoice_id);
+CREATE INDEX idx_notification_type ON notification_history(notification_type);
 ```
 
 ---
 
 ## 2. Integration Points
 
-### 2.1 Shopify Integration
+### 2.1 Sevdesk Integration (Primary)
 
 #### Webhook Subscription
-- **Events to subscribe**: `orders/paid`
-- **Endpoint**: `https://[uberspace-domain]/webhooks/shopify/order-paid`
-- **Verification**: HMAC-SHA256 signature check mandatory
-- **Deduplication**: Use `X-Shopify-Webhook-Id` header as unique constraint
-- **Timeout tolerance**: Shopify times out at 5 seconds; return 200 OK immediately, process async
-
-#### GraphQL Queries Required
-1. Fetch complete order details (tax, discounts, full line items)
-   - Scope: `read_orders`
-   - Query returns: `orders.nodes[0]` with all financial details
-   
-2. Rate limit: 100 points/second (GraphQL leaky bucket)
-
-#### OAuth Scopes (Custom App)
-- `read_orders` - Read order data
-- `read_customers` - Read customer email and addresses
-- `read_transactions` - Read payment transaction status
-
-### 2.2 Sevdesk Integration
-
-#### Contact API
-- **Endpoint**: `POST https://my.sevdesk.de/api/v1/Contact`
-- **Authentication**: `Authorization: api_key {SEVDESK_API_KEY}`
-- **Required fields**: email, firstname, lastname
-- **Upsert logic**: Query by email first; create if not exists
+- **Events to subscribe**: Payment received, Invoice status changed
+- **Endpoint**: `https://[uberspace-domain]/webhooks/sevdesk/payment-received`
+- **Verification**: HMAC signature check (if Sevdesk provides)
+- **Deduplication**: Use unique payment/invoice ID as unique constraint
+- **Timeout tolerance**: Return 200 OK immediately, process async
 
 #### Invoice API
-- **Endpoint**: `POST https://my.sevdesk.de/api/v1/Invoice`
-- **Required fields**: 
-  - `objectName`: "Invoice"
-  - `mapAll`: true
-  - `invoice` object with date, dueDate, currency
-  - Line items array
-- **Response**: Returns invoice ID in response body
+- **Endpoint**: `GET https://my.sevdesk.de/api/v1/Invoice`
+- **Authentication**: `Authorization: api_key {SEVDESK_API_KEY}`
+- **Query overdue**: Filter by due_date < today AND status != paid
 - **Pagination**: Max 1000 records per query
 
-#### Invoice Status
-- **Created status**: Initially "DRAFT"
-- **Finalization**: Can call finalize endpoint to set to "COMPLETED"
-- **Accounting**: Automatically posted to accounting module
+#### Contact API
+- **Endpoint**: `GET https://my.sevdesk.de/api/v1/Contact`
+- **Required fields**: email, firstname, lastname
+- **Purpose**: Get customer email for Shopify order matching
 
-### 2.3 Email Integration
+### 2.2 Shopify Integration
 
-**Challenge**: Shopify has no transactional email API; cannot send custom emails directly via Shopify API.
+#### Order Update API
+- **Endpoint**: `POST /admin/api/2024-01/orders/{order_id}/close.json` (GraphQL mutation)
+- **Purpose**: Mark order as paid when payment received in Sevdesk
+- **Authentication**: Shopify Admin API access token
+- **Scope**: `write_orders`
 
-**Solution Options**:
-1. **Option A (Recommended)**: Use SendGrid or similar
-   - Send email directly from Sevdesk invoice event
-   - Template: "Payment Received - Invoice {invoice_id}"
-   - Cost: ~$0-20/month depending on volume
+#### Email Sending API
+- **Challenge**: Shopify has no direct transactional email API
+- **Solution**: Use Shopify Order API to trigger order confirmation email
+- **Alternative**: SendGrid or similar for custom emails (Phase 2)
 
-2. **Option B**: Manual email via Sevdesk
-   - Admin must manually confirm in Sevdesk
-   - Less automated, not recommended
+#### GraphQL Queries Required
+1. Find order by customer email
+   - Scope: `read_orders`
+   - Match Sevdesk invoice customer to Shopify order
+   
+2. Update order financial status
+   - Scope: `write_orders`
+   - Set status to "paid"
 
-**For Phase 1**: Skip email sending; implement placeholder. Add in Phase 2 with SendGrid integration.
+#### OAuth Scopes (Custom App)
+- `read_orders` - Find orders by customer email
+- `write_orders` - Update order status
+- `read_customers` - Read customer data
 
 ---
 
 ## 3. Implementation Plan (Phases)
 
-### Phase 1: Core Webhook Infrastructure (12 hours)
+### Phase 1: Payment Notification System (12 hours)
 
 **Deliverables**:
-- Webhook endpoint with HMAC verification
-- Shopify custom app created and authenticated
-- Basic order→invoice sync for single order
-- PostgreSQL schema and migrations
+- Sevdesk webhook endpoint for payment received events
+- Shopify order lookup by customer email
+- Shopify order status update to "paid"
+- Customer email sending via Shopify
+- PostgreSQL schema (sync_state + notification_history)
 - Unit tests for webhook validation
 
 **No Phase 1 Deliverable**:
-- Email sending (Phase 2)
-- Reconciliation polling (Phase 2)
+- Shopify → Sevdesk order sync (Phase 2)
+- Overdue notification job (Phase 2)
 - Sentry monitoring (Phase 2)
 - Production deployment (Phase 3)
 
-### Phase 2: Reliability & Reconciliation (8 hours)
+### Phase 2: Overdue Notifications & Optional Order Sync (8 hours)
 
 **Deliverables**:
-- Reconciliation job (5-10 min polling)
+- Daily overdue invoice check (cron job)
+- Payment reminder emails via Shopify
+- Notification history tracking (prevent duplicates)
+- Optional: Shopify → Sevdesk order sync
 - Retry logic with exponential backoff
 - Circuit breaker pattern for API failures
-- Dead letter queue for investigation
-- Email sending via SendGrid or similar
 - Integration tests with mock APIs
 
 ### Phase 3: Deployment & Operations (Variable)
@@ -482,20 +489,24 @@ SENDGRID_API_KEY=your_key (Phase 2)
 
 ### 10.1 Phase 1 Completion
 
-- [ ] Webhook endpoint receives Shopify orders/paid events
-- [ ] HMAC verification passes all test cases
-- [ ] Single order creates invoice in Sevdesk
-- [ ] No duplicate invoices created for same order
+- [ ] Webhook endpoint receives Sevdesk payment events
+- [ ] HMAC verification passes all test cases (if Sevdesk provides)
+- [ ] Shopify order found by customer email
+- [ ] Order status updated to "paid" in Shopify
+- [ ] Customer receives payment confirmation email
+- [ ] No duplicate notifications sent
 - [ ] Unit test coverage ≥ 60%
 - [ ] Database schema created and tested
 - [ ] Error handling catches and logs all failure modes
 
 ### 10.2 System Maturity (Phase 2+)
 
-- [ ] Sync success rate ≥ 99%
-- [ ] Zero data loss or duplicates across 1000+ orders
-- [ ] Latency: <5 minutes from payment to Sevdesk
-- [ ] Email confirmations sent reliably (Phase 2)
+- [ ] Notification success rate ≥ 99%
+- [ ] Zero duplicate notifications across 1000+ payments
+- [ ] Latency: <5 minutes from payment to customer email
+- [ ] Daily overdue check runs reliably
+- [ ] Payment reminder emails sent without duplicates
+- [ ] Optional: Shopify orders sync to Sevdesk invoices
 - [ ] Manual recovery process documented and tested
 - [ ] Sentry alerting configured and responsive
 
@@ -505,20 +516,22 @@ SENDGRID_API_KEY=your_key (Phase 2)
 
 ### 11.1 Current Limitations
 
-1. **Email API**: Shopify has no transactional email API; email sending deferred to Phase 2
-2. **Order History**: Shopify GraphQL limited to 60 days; full sync requires Partner approval
+1. **Email API**: Shopify has no direct transactional email API; using order confirmation trigger
+2. **Order Matching**: Relies on customer email matching between Sevdesk and Shopify
 3. **Testing**: Phase 1 uses mock APIs; sandbox testing added in Phase 2
 4. **Scaling**: Single-server deployment suitable for <5000 orders/month
 5. **UI/Admin Console**: No admin interface; all config via environment variables
+6. **Sevdesk Webhooks**: May not provide HMAC verification; need alternative security
 
 ### 11.2 Future Enhancements (not in scope)
 
-- Web dashboard to monitor sync status
-- Manual retry interface for failed orders
+- Web dashboard to monitor notification status
+- Manual retry interface for failed notifications
 - Multi-store support
 - Convert to public Shopify app for app store distribution
 - Kubernetes deployment for high-volume scaling
-- Webhook delivery guarantees (currently fire-and-forget)
+- Custom email templates via SendGrid
+- Shopify → Sevdesk automatic invoice creation (Phase 2)
 
 ---
 
