@@ -1,13 +1,13 @@
 # Active Context: Current Work
 
 ## Current Focus
-[2026-02-20 11:00] - Planning restructured. Created A0-prerequisites.md for manual setup. Split implementation into 3 focused plans: A2 (foundation/polling), A3 (Shopify integration), A4 (testing/docs). Changed to polling-based approach for local development. User needs to complete A0-prerequisites before implementation can begin.
+[2026-02-20 13:00] - Research complete. Shopify uses client credentials grant (token from Client ID + Secret, 24h expiry). GraphQL is beneficial. Plans updated: A0-prerequisites reflects current status (Shopify ready, Sevdesk blocked), A2-plan focuses on Shopify first. Ready to start implementation of Shopify portion while waiting for Sevdesk API access.
 
 ## Immediate Goals
-- User completes A0-prerequisites.md (Shopify app, Sevdesk API key, local PostgreSQL)
-- Execute A2-plan.md (project foundation)
-- Execute A3-plan.md (Shopify integration)
-- Execute A4-plan.md (testing & documentation)
+- User completes Node.js and PostgreSQL setup
+- Execute A2-plan.md Tasks 1-4 (Shopify focused)
+- Execute A3-plan.md (Shopify order operations)
+- Add Sevdesk integration when API access available
 
 ## Open Blockers
 None currently

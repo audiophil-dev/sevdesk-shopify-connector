@@ -3,64 +3,113 @@
 **Ticket**: payment-notifications  
 **Owner**: User (manual steps)  
 **Purpose**: Environment setup before implementation can begin  
-**Estimated Time**: 45-60 minutes
+**Estimated Time**: 30 minutes (Shopify ready, Sevdesk later)
 
 ---
 
 ## Overview
 
-This checklist contains all manual prerequisites that must be completed before the implementation plan (A2-plan.md) can be executed. The implementing agent cannot proceed until these items are complete.
+This checklist contains all manual prerequisites. Some items are required immediately, others can be completed later. **Implementation can start now** with Shopify integration while Sevdesk API access is pending.
+
+**Current Status**: Shopify credentials ready, Sevdesk blocked (plan change needed)
 
 ---
 
-## Phase 1: Required Before Development (Blocking)
+## Phase 1A: Shopify Setup (READY)
 
 ### 1.1 Shopify Setup
 
-- [ ] **Access Shopify Admin**
-  - URL: Your store's admin URL (e.g., `your-store.myshopify.com/admin`)
+- [x] **Access Shopify Admin**
+  - URL: https://admin.shopify.com/store/paurum-dev-shop/settings/organization-account
   - Need: Admin access to the store
   - Time: Immediate if you have access
 
-- [ ] **Create Custom App**
-  - Navigate to: Settings → Apps and sales channels → Develop apps
-  - Click: "Create an app"
-  - Name: `Sevdesk Payment Notifier` (or your preference)
-  - Time: 2 minutes
+- [x] **Create Custom App in Dev Dashboard**
+  - Navigate to: https://dev.shopify.com/dashboard/
+  - App URL: https://dev.shopify.com/dashboard/61316718/apps/325366284289
+  - Name: `Sevdesk Connector`
+  - Time: Done
 
-- [ ] **Configure API Scopes**
+- [x] **Configure API Scopes**
   - In the app, go to: Configuration → Admin API integration
-  - Select scopes:
+  - Scopes configured:
     - `read_orders` - Find orders by customer email
     - `write_orders` - Update order financial status
     - `read_customers` - Read customer data
-  - Save configuration
-  - Time: 3 minutes
+  - Time: Done
 
-- [ ] **Install App and Get Credentials**
-  - Click: "Install app"
-  - Copy and save:
-    - **Admin API access token** (starts with `shpat_`)
-    - **API key** (starts with `shp_`)
-    - **API secret key**
-  - Store securely - you'll need these for `.env` file
-  - Time: 5 minutes
+- [x] **Get Client Credentials**
+  - **Client ID**: Obtained
+  - **Client Secret**: Obtained (starts with `shpss_`)
+  - Store securely in `.env` file
+  - Time: Done
 
-### 1.2 Sevdesk Setup
+### 1.2 Authentication Method: Client Credentials Grant
+
+**How it works** (from Shopify docs):
+1. Your app requests a token using Client ID + Client Secret
+2. Shopify returns an `access_token` valid for 24 hours
+3. Your code caches the token and refreshes before expiry
+
+**Token Request**:
+```bash
+POST https://paurum-dev-shop.myshopify.com/admin/oauth/access_token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET
+```
+
+**Token Response**:
+```json
+{
+  "access_token": "f85632530bf277ec9ac6f649fc327f17",
+  "scope": "read_orders,write_orders,read_customers",
+  "expires_in": 86399
+}
+```
+
+**Implementation** (handled by code):
+```typescript
+async function getShopifyToken() {
+  // Cache token, refresh before 24h expiry
+  const response = await fetch(
+    `https://${SHOP}.myshopify.com/admin/oauth/access_token`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+      }),
+    }
+  );
+  const { access_token, expires_in } = await response.json();
+  return access_token;
+}
+```
+
+---
+
+## Phase 1B: Sevdesk Setup (BLOCKED - Plan Change Needed)
+
+### 1.3 Sevdesk Setup
+
+- [ ] **Upgrade Sevdesk Plan** (if needed for API access)
+  - Check current plan supports API access
+  - Upgrade if necessary
+  - Time: Variable
 
 - [ ] **Get Sevdesk API Key**
   - Log into Sevdesk
   - Navigate to: Settings → API
   - Generate or copy existing API key
   - Store securely
-  - Time: 5 minutes
+  - Time: 5 minutes (after plan upgrade)
 
-- [ ] **Note Your Sevdesk ID**
-  - Find your Sevdesk user/contact ID
-  - Needed for invoice creation (if implementing Shopify → Sevdesk later)
-  - Time: 2 minutes
+---
 
-### 1.3 Local Development Environment
+## Phase 1C: Local Development Environment
 
 - [ ] **Install Node.js 20.x LTS**
   - Download from: https://nodejs.org/
@@ -83,10 +132,6 @@ This checklist contains all manual prerequisites that must be completed before t
   createdb sevdesk_sync
   ```
   - Time: 2 minutes
-
-- [ ] **Install Git** (if not already installed)
-  - Verify: `git --version`
-  - Time: 5 minutes
 
 ---
 
@@ -144,14 +189,13 @@ This checklist contains all manual prerequisites that must be completed before t
 Create a `.env` file in the project root with these values:
 
 ```bash
-# Shopify
-SHOPIFY_STORE_URL=your-store.myshopify.com
-SHOPIFY_ACCESS_TOKEN=shpat_xxxxxxxxxxxx
-SHOPIFY_API_KEY=shp_xxxxxxxxxxxx
-SHOPIFY_API_SECRET=shpss_xxxxxxxxxxxx
+# Shopify (Client Credentials Grant)
+SHOPIFY_SHOP=paurum-dev-shop              # without .myshopify.com
+SHOPIFY_CLIENT_ID=your_client_id          # from Dev Dashboard
+SHOPIFY_CLIENT_SECRET=shpss_xxxxxxxxxxxx  # from Dev Dashboard
 
-# Sevdesk
-SEVDESK_API_KEY=xxxxxxxxxxxx
+# Sevdesk (add when available)
+SEVDESK_API_KEY=                          # leave empty for now
 
 # Database (local development)
 DATABASE_URL=postgresql://postgres:dev@localhost:5432/sevdesk_sync
@@ -160,6 +204,7 @@ DATABASE_URL=postgresql://postgres:dev@localhost:5432/sevdesk_sync
 NODE_ENV=development
 PORT=3000
 POLL_INTERVAL_MS=60000
+ENABLE_POLLING=false                      # disable until Sevdesk ready
 
 # Optional (Phase 2)
 SENTRY_DSN=
@@ -167,33 +212,52 @@ SENTRY_DSN=
 
 **Important**: 
 - Never commit `.env` to git
-- `.env.example` template will be created by implementation plan
+- Access tokens are obtained programmatically (24h expiry, auto-refresh)
 - Production credentials go on Uberspace server only
+
+---
+
+## What Can Be Started Now
+
+**Ready to implement (not blocked):**
+- Project setup (package.json, tsconfig, directories)
+- Express server with health endpoint
+- PostgreSQL database schema
+- Shopify GraphQL client (client credentials grant)
+- Order lookup by customer email
+- Order status update to "paid"
+- Email triggering tests
+
+**Blocked until Sevdesk API available:**
+- Sevdesk API client
+- Polling job for payment detection
+- End-to-end payment notification flow
 
 ---
 
 ## Verification Checklist
 
-Before proceeding to A2-plan.md, verify:
+Before proceeding to implementation, verify:
 
-- [ ] Can connect to Shopify API with access token
-- [ ] Can connect to Sevdesk API with API key
+- [x] Shopify Dev Dashboard app created
+- [x] Client ID and Client Secret obtained
+- [x] API scopes configured (read_orders, write_orders, read_customers)
 - [ ] PostgreSQL is running and accessible
 - [ ] Node.js 20.x is installed
-- [ ] `.env` file created with all required values
+- [ ] `.env` file created with Shopify credentials
 
 ---
 
 ## Quick Verification Commands
 
 ```bash
-# Test Shopify API access
-curl -X GET "https://your-store.myshopify.com/admin/api/2024-01/shop.json" \
-  -H "X-Shopify-Access-Token: shpat_xxxxxxxxxxxx"
+# Test Shopify token acquisition (client credentials grant)
+curl -X POST "https://paurum-dev-shop.myshopify.com/admin/oauth/access_token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=client_credentials&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET"
 
-# Test Sevdesk API access
-curl -X GET "https://my.sevdesk.de/api/v1/Contact" \
-  -H "Authorization: api_key YOUR_API_KEY"
+# Expected response:
+# {"access_token":"...","scope":"read_orders,write_orders,read_customers","expires_in":86399}
 
 # Test PostgreSQL connection
 psql $DATABASE_URL -c "SELECT version();"
@@ -204,14 +268,24 @@ node --version  # Should be v20.x.x
 
 ---
 
-## When Complete
+## Implementation Can Start
 
-Once all Phase 1 items are checked off:
-1. Inform the implementing agent that prerequisites are complete
-2. Agent will begin A2-plan.md execution
-3. Phase 2 (test data) can be created during implementation
+**Once Node.js and PostgreSQL are ready**, the implementing agent can begin:
+
+1. **A2-plan.md** (partial - Shopify focused):
+   - Project setup
+   - Express server
+   - Database schema
+   - Shopify client (client credentials grant)
+
+2. **A3-plan.md** (full):
+   - Order lookup by email
+   - Order status update
+   - Email triggering
+
+**Sevdesk integration will be added** when API access is available.
 
 ---
 
 **Last Updated**: 2026-02-20  
-**Status**: Ready for user completion
+**Status**: Shopify ready, Sevdesk pending (plan change needed)
