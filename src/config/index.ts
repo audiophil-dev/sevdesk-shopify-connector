@@ -11,6 +11,7 @@ export interface Config {
     shop: string;
     clientId: string;
     clientSecret: string;
+    accessToken?: string; // Direct access token for custom apps
   };
   sevdesk: {
     apiKey: string;
@@ -33,6 +34,7 @@ export const config: Config = {
     shop: process.env.SHOPIFY_SHOP || '',
     clientId: process.env.SHOPIFY_CLIENT_ID || '',
     clientSecret: process.env.SHOPIFY_CLIENT_SECRET || '',
+    accessToken: process.env.SHOPIFY_ACCESS_TOKEN,
   },
   sevdesk: {
     apiKey: process.env.SEVDESK_API_KEY || '',

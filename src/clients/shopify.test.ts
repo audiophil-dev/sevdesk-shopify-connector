@@ -16,6 +16,7 @@ jest.mock('../config', () => ({
       shop: 'https://test-shop.myshopify.com',
       clientId: 'test-client-id',
       clientSecret: 'test-client-secret',
+      accessToken: 'test-access-token',
     },
   },
 }));
