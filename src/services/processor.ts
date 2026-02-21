@@ -70,7 +70,7 @@ export async function processPaidInvoice(invoice: SevdeskInvoice): Promise<void>
     }
 
     // Step 2: Get customer contact from Sevdesk
-    const contact = await sevdeskClient.getInvoiceContact(invoice.contactId);
+    const contact = await sevdeskClient.getInvoiceContact(invoice.contact.id);
     
     // Sevdesk stores email in emailPersonal or emailWork, not 'email'
     const customerEmail = contact.emailPersonal || contact.emailWork;

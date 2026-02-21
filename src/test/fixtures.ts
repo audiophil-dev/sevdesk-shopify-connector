@@ -78,56 +78,71 @@ export const sevdeskInvoices = {
   paid: {
     id: 'INV-2026-001',
     invoiceNumber: '2026-00001',
-    status: 'paid',
+    status: '1000',
     total: 99.99,
     currency: 'EUR',
     invoiceDate: '2026-02-15',
     dueDate: '2026-03-15',
-    contactId: 'CONTACT-001',
+    contact: {
+      id: 'CONTACT-001',
+      objectName: 'Contact',
+    },
   } as SevdeskInvoice,
 
   unpaid: {
     id: 'INV-2026-002',
     invoiceNumber: '2026-00002',
-    status: 'unpaid',
+    status: '200',
     total: 149.99,
     currency: 'EUR',
     invoiceDate: '2026-02-14',
     dueDate: '2026-03-14',
-    contactId: 'CONTACT-002',
+    contact: {
+      id: 'CONTACT-002',
+      objectName: 'Contact',
+    },
   } as SevdeskInvoice,
 
   overdue: {
     id: 'INV-2026-003',
     invoiceNumber: '2026-00003',
-    status: 'overdue',
+    status: '500',
     total: 199.99,
     currency: 'EUR',
     invoiceDate: '2026-01-15',
     dueDate: '2026-02-15',
-    contactId: 'CONTACT-003',
+    contact: {
+      id: 'CONTACT-003',
+      objectName: 'Contact',
+    },
   } as SevdeskInvoice,
 
   multiple: [
     {
       id: 'INV-2026-004',
       invoiceNumber: '2026-00004',
-      status: 'paid',
+      status: '1000',
       total: 50.00,
       currency: 'EUR',
       invoiceDate: '2026-02-18',
       dueDate: '2026-03-18',
-      contactId: 'CONTACT-004',
+      contact: {
+        id: 'CONTACT-004',
+        objectName: 'Contact',
+      },
     } as SevdeskInvoice,
     {
       id: 'INV-2026-005',
       invoiceNumber: '2026-00005',
-      status: 'paid',
+      status: '1000',
       total: 75.00,
       currency: 'EUR',
       invoiceDate: '2026-02-19',
       dueDate: '2026-03-19',
-      contactId: 'CONTACT-004',
+      contact: {
+        id: 'CONTACT-004',
+        objectName: 'Contact',
+      },
     } as SevdeskInvoice,
   ],
 };

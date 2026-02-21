@@ -84,12 +84,12 @@ describe('Payment Notification Flow Integration', () => {
       await processPaidInvoice({
         id: 'INV-001',
         invoiceNumber: '2026-00001',
-        status: 'paid',
+        status: '1000',
         total: 99.99,
         currency: 'EUR',
         invoiceDate: '2026-02-15',
         dueDate: '2026-03-15',
-        contactId: 'CONTACT-001',
+        contact: { id: 'CONTACT-001', objectName: 'Contact' },
       });
 
       // Assert
@@ -113,12 +113,12 @@ describe('Payment Notification Flow Integration', () => {
       await processPaidInvoice({
         id: 'INV-001',
         invoiceNumber: '2026-00001',
-        status: 'paid',
+        status: '1000',
         total: 99.99,
         currency: 'EUR',
         invoiceDate: '2026-02-15',
         dueDate: '2026-03-15',
-        contactId: 'CONTACT-001',
+        contact: { id: 'CONTACT-001', objectName: 'Contact' },
       });
 
       // Assert - error is caught and recorded as failed
@@ -154,12 +154,12 @@ describe('Payment Notification Flow Integration', () => {
       await processPaidInvoice({
         id: 'INV-001',
         invoiceNumber: '2026-00001',
-        status: 'paid',
+        status: '1000',
         total: 99.99,
         currency: 'EUR',
         invoiceDate: '2026-02-15',
         dueDate: '2026-03-15',
-        contactId: 'CONTACT-001',
+        contact: { id: 'CONTACT-001', objectName: 'Contact' },
       });
 
       // Assert - should record failure
@@ -188,12 +188,12 @@ describe('Payment Notification Flow Integration', () => {
       await processPaidInvoice({
         id: 'INV-001',
         invoiceNumber: '2026-00001',
-        status: 'paid',
+        status: '1000',
         total: 99.99,
         currency: 'EUR',
         invoiceDate: '2026-02-15',
         dueDate: '2026-03-15',
-        contactId: 'CONTACT-001',
+        contact: { id: 'CONTACT-001', objectName: 'Contact' },
       });
 
       // Assert - Should not make any external calls

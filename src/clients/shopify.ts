@@ -2,7 +2,8 @@ import { config } from '../config';
 import { 
   ShopifyAccessTokenResponse, 
   ShopifyGraphQLResponse, 
-  ShopifyOrdersResponse 
+  ShopifyOrdersResponse,
+  ShopifyOrder
 } from '../types/shopify';
 
 export class ShopifyClient {
@@ -128,6 +129,105 @@ export class ShopifyClient {
 
     const data = await this.graphql<{ order: unknown }>(query, { id: orderId });
     return { orders: { edges: [{ node: data.order as never }] } };
+  }
+
+  /**
+   * Find a Shopify order by customer email.
+   * Returns the most recent order matching the email.
+   */
+  async findOrderByEmail(email: string): Promise<ShopifyOrder | null> {
+    if (!email) {
+      console.log('[shopify] No email provided for order lookup');
+      return null;
+    }
+
+    const query = `
+      query GetOrdersByEmail($query: String!, $first: Int!) {
+        orders(first: $first, query: $query) {
+          edges {
+            node {
+              id
+              name
+              email
+              displayFinancialStatus
+              totalPriceSet {
+                shopMoney {
+                  amount
+                  currencyCode
+                }
+              }
+              createdAt
+              updatedAt
+            }
+          }
+        }
+      }
+    `;
+
+    // Search by email in Shopify
+    const searchQuery = `email:${email}`;
+    const response = await this.graphql<ShopifyOrdersResponse>(query, { 
+      query: searchQuery, 
+      first: 10 
+    });
+
+    if (!response.orders || response.orders.edges.length === 0) {
+      console.log(`[shopify] No orders found for email: ${email}`);
+      return null;
+    }
+
+    // Return the most recent order (first edge has most recent due to Shopify's sort)
+    const mostRecentOrder = response.orders.edges[0].node;
+    console.log(`[shopify] Found order ${mostRecentOrder.name} for email: ${email}`);
+    
+    return mostRecentOrder;
+  }
+
+  /**
+   * Mark a Shopify order as paid.
+   * Uses the orderUpdate mutation to set financial status to PAID.
+   */
+  async markOrderAsPaid(orderId: string): Promise<boolean> {
+    const query = `
+      mutation OrderUpdate($input: OrderInput!) {
+        orderUpdate(input: $input) {
+          order {
+            id
+            displayFinancialStatus
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `;
+
+    const response = await this.graphql<{
+      orderUpdate: {
+        order: { id: string; displayFinancialStatus: string } | null;
+        userErrors: Array<{ field: string; message: string }>;
+      };
+    }>(query, {
+      input: {
+        id: orderId,
+        financialStatus: "PAID",
+      },
+    });
+
+    if (response.orderUpdate.userErrors && response.orderUpdate.userErrors.length > 0) {
+      const errorMessages = response.orderUpdate.userErrors
+        .map(e => `${e.field}: ${e.message}`)
+        .join(', ');
+      throw new Error(`Failed to mark order as paid: ${errorMessages}`);
+    }
+
+    if (!response.orderUpdate.order) {
+      throw new Error('Order update returned no order');
+    }
+
+    console.log(`[shopify] Order ${orderId} marked as paid (status: ${response.orderUpdate.order.displayFinancialStatus})`);
+    return true;
   }
 }
 

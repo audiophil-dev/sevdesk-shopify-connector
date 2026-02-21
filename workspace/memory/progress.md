@@ -25,21 +25,22 @@
 - [2026-02-20] Created A0-prerequisites.md (manual setup checklist)
 - [2026-02-20] Split A2-plan into A2, A3, A4 (smaller focused plans)
 - [2026-02-20] Changed from webhook-based to polling-based (works locally)
+- [2026-02-20] A2-plan COMPLETE: Project foundation (17 files, 11 acceptance criteria)
+- [2026-02-20] A3-plan COMPLETE: Shopify integration (order lookup, status update, email)
+- [2026-02-20] A4-plan COMPLETE: Testing (87.83% coverage, 28 tests) and documentation
 
 ## In Progress
-- Phase 1 implementation (assigned to @backend-specialist) - webhook infrastructure
+None - Implementation complete
 
 ## Next
-- Execute Phase 1 tasks 1-11 (webhook infrastructure, 12-24 hours)
-- Code review Phase 1 implementation
-- Manual testing with Shopify sandbox
-- Phase 2 planning: reconciliation and retry logic
-- Uberspace account setup (Phase 3)
-- Deployment to Uberspace (Phase 3)
+- Configure production environment (.env with credentials)
+- Create PostgreSQL database `sevdesk_sync`
+- Deploy to Uberspace (follow docs/deployment-guide.md)
+- Set up monitoring and alerting
 
 ## Blocked
 None
 
 ---
 
-**Last Updated**: 2026-02-17 22:15:00
+**Last Updated**: 2026-02-20 22:35:00

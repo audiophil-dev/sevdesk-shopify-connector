@@ -1,12 +1,15 @@
 export interface SevdeskInvoice {
   id: string;
   invoiceNumber: string;
-  status: 'paid' | 'unpaid' | 'overdue';
+  status: '100' | '200' | '300' | '400' | '500' | '1000'; // Sevdesk status codes: 100=Draft, 200=Sent, 300=Partial, 400=Cancelled, 500=Overdue, 1000=Paid
   total: number;
   currency: string;
   invoiceDate: string;
   dueDate: string;
-  contactId: string;
+  contact: {
+    id: string;
+    objectName: string;
+  };
 }
 
 export interface SevdeskContact {

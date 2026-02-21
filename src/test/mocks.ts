@@ -33,12 +33,15 @@ export function createMockSevdeskInvoice(overrides: Partial<SevdeskInvoice> = {}
   return {
     id: 'INV-2026-001',
     invoiceNumber: '2026-00001',
-    status: 'paid',
+    status: '1000',
     total: 99.99,
     currency: 'EUR',
     invoiceDate: '2026-02-15',
     dueDate: '2026-03-15',
-    contactId: 'CONTACT-123',
+    contact: {
+      id: 'CONTACT-123',
+      objectName: 'Contact',
+    },
     ...overrides,
   };
 }

@@ -1,0 +1,44 @@
+{
+  "tasks": [
+    {
+      "role": "research-shopify-api",
+      "agent": "technology-researcher",
+      "plan": "workspace/docs/knowledge/technical/research-plan.md",
+      "ticket": "R1",
+      "description": "Research Shopify API capabilities: webhooks, order data, payments, email, rate limits, authentication",
+      "cwd": "/workspace/sevdesk-shopify-connector",
+      "dependencies": [],
+      "prompt": "Conduct comprehensive research on Shopify API capabilities for order sync integration:\n\n1. Webhook support: What events are available? Can we receive real-time order updates?\n2. Order data structure: What fields are available in the order object? How are payments represented?\n3. Authentication: What auth methods does Shopify support (OAuth, API keys, etc)?\n4. Rate limits: What are the API rate limits and throttling behavior?\n5. Email capabilities: Can Shopify send custom emails or notifications?\n\nOutput comprehensive research document to: docs/knowledge/technical/shopify-api-research.md\n\nFormat requirements:\n- Include code examples where relevant\n- Document all relevant endpoints\n- Include rate limit information\n- Add section on webhook reliability and retry behavior\n- Include links to official documentation"
+    },
+    {
+      "role": "research-sevdesk-api",
+      "agent": "technology-researcher",
+      "plan": "workspace/docs/knowledge/technical/research-plan.md",
+      "ticket": "R2",
+      "description": "Research Sevdesk API capabilities: invoices, auth, rate limits, webhook support, contacts",
+      "cwd": "/workspace/sevdesk-shopify-connector",
+      "dependencies": [],
+      "prompt": "Conduct research on Sevdesk API capabilities for order sync integration:\n\n1. Invoice creation: What fields are required? Can we create invoices from order data?\n2. Authentication: What auth methods are supported?\n3. Rate limits: What are the API rate limits and throttling behavior?\n4. Webhook support: Does Sevdesk support webhooks for events?\n5. Contact/customer management: How are customers stored and linked?\n\nOutput comprehensive research document to: docs/knowledge/technical/sevdesk-api-research.md\n\nFormat requirements:\n- Include code examples where relevant\n- Document all relevant endpoints\n- Include rate limit information\n- Add section on error handling and retry logic\n- Include links to official documentation"
+    },
+    {
+      "role": "research-patterns",
+      "agent": "technology-researcher",
+      "plan": "workspace/docs/knowledge/technical/research-plan.md",
+      "ticket": "R3",
+      "description": "Research integration patterns: event-driven vs polling, webhook reliability, retry logic, idempotency",
+      "cwd": "/workspace/sevdesk-shopify-connector",
+      "dependencies": [],
+      "prompt": "Conduct research on integration pattern options for Shopify-Sevdesk connector:\n\n1. Event-driven approach: Using webhooks/events\n   - Pros and cons\n   - Webhook delivery reliability\n   - Error handling and retry strategies\n2. Polling approach: Periodically querying for changes\n   - Pros and cons\n   - Suitable polling intervals\n   - Performance implications\n3. Hybrid approach: Combining webhooks with polling\n   - When would this be appropriate?\n   - Architecture trade-offs\n4. Cross-cutting concerns:\n   - Idempotency requirements\n   - Dead letter queues for failed syncs\n   - Event deduplication\n   - Data consistency guarantees\n\nOutput comprehensive research document to: docs/knowledge/technical/integration-patterns.md\n\nFormat requirements:\n- Compare approaches with trade-off table\n- Include example implementations\n- Describe failure scenarios and recovery\n- Add best practices section"
+    },
+    {
+      "role": "research-stack",
+      "agent": "technology-researcher",
+      "plan": "workspace/docs/knowledge/technical/research-plan.md",
+      "ticket": "R4",
+      "description": "Research tech stack recommendations: language, framework, deployment, database, monitoring",
+      "cwd": "/workspace/sevdesk-shopify-connector",
+      "dependencies": [],
+      "prompt": "Conduct research on recommended technology stacks for a Shopify-Sevdesk connector:\n\n1. Programming language recommendations\n   - Node.js vs Python vs Go for API integration work\n   - Ecosystem maturity for both APIs\n   - Library availability\n2. Framework options\n   - For Express/Node: Express, Fastify, Hono considerations\n   - Error handling patterns\n   - Middleware ecosystem\n3. Deployment approaches\n   - Containerization (Docker) suitability\n   - Serverless (Lambda, Cloud Functions) considerations\n   - Traditional server deployment\n4. Database needs\n   - State storage for sync tracking\n   - Message queue options (RabbitMQ, Redis, SQS)\n5. Monitoring and observability\n   - Error tracking\n   - Performance monitoring\n   - Logging strategy\n\nOutput comprehensive research document to: docs/knowledge/technical/tech-stack-recommendation.md\n\nFormat requirements:\n- Compare options with pros/cons\n- Provide recommendation with rationale\n- Include reference implementations\n- Add deployment architecture diagrams"
+    }
+  ]
+}
