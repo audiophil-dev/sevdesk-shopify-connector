@@ -43,6 +43,26 @@ createdb sevdesk_sync
 
 ## Step 3: Configure Shopify
 
+### Option A: Dev Dashboard App (OAuth Token Caching)
+
+This option uses the Shopify Dev Dashboard to obtain an OAuth token automatically. The token is cached locally and refreshed when expired.
+
+1. Create an app in the [Shopify Dev Dashboard](https://dev-dashboard.shopify.com/)
+2. Configure Admin API scopes:
+   - `read_orders`
+   - `write_orders`
+   - `read_customers`
+3. Install the app on your store
+4. Copy the Client ID and Client Secret from the app credentials
+
+The system will automatically:
+- Request an OAuth token on first run and cache it in `.shopify-token.json`
+- Tokens are valid for 24 hours and automatically refreshed when expired
+
+### Option B: Custom App (Direct Access Token)
+
+This option uses a direct Admin API access token from a custom app.
+
 1. Log in to your Shopify admin
 2. Go to Settings > Apps and sales channels > Develop apps
 3. Click "Create an app" > "Create an app"
@@ -51,6 +71,13 @@ createdb sevdesk_sync
    - `write_orders`
    - `read_customers`
 5. Install the app and copy the access token
+6. Add to `.env`: `SHOPIFY_ACCESS_TOKEN=shpat_xxx`
+
+### Token Storage
+
+- OAuth tokens are cached in `.shopify-token.json` (auto-generated, git-ignored)
+- Tokens expire after 24 hours and are automatically refreshed
+- If you encounter Cloudflare challenges, use Option B (direct access token)
 
 ## Step 4: Configure Sevdesk
 
@@ -64,10 +91,14 @@ createdb sevdesk_sync
 Create a `.env` file in the project root:
 
 ```bash
-# Shopify Configuration
+# Shopify Configuration (Option A: OAuth - Dev Dashboard App)
 SHOPIFY_SHOP=your-shop-name
 SHOPIFY_CLIENT_ID=your_client_id
 SHOPIFY_CLIENT_SECRET=your_client_secret
+
+# OR Shopify Configuration (Option B: Direct Token - Custom App)
+SHOPIFY_SHOP=your-shop-name
+SHOPIFY_ACCESS_TOKEN=shpat_your_access_token
 
 # Sevdesk Configuration
 SEVDESK_API_KEY=your_sevdesk_api_key
@@ -79,6 +110,7 @@ DATABASE_URL=postgresql://sevdesk:your_password@localhost:5432/sevdesk_sync
 PORT=3000
 POLL_INTERVAL_MS=60000
 ENABLE_POLLING=true
+DRY_RUN=true  # Set to false for production
 ```
 
 ## Step 6: Run Migrations
