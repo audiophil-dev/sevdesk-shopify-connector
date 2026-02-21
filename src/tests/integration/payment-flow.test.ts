@@ -9,12 +9,10 @@
 const mockSevdeskClient = {
   getInvoice: jest.fn(),
   getPaidInvoices: jest.fn(),
-  getInvoiceContact: jest.fn(),
-  searchInvoicesByCustomerEmail: jest.fn(),
 };
 
 const mockShopifyClient = {
-  findOrderByEmail: jest.fn(),
+  findOrderByOrderName: jest.fn(),
   markOrderAsPaid: jest.fn(),
   getAccessToken: jest.fn(),
 };
@@ -60,13 +58,7 @@ describe('Payment Notification Flow Integration', () => {
      it('should process paid invoice end-to-end', async () => {
        // Arrange: Mock responses
        mockDbQueryOne.mockResolvedValueOnce(null); // No existing notification
-       mockSevdeskClient.getInvoiceContact.mockResolvedValueOnce({
-         id: 'CONTACT-001',
-         emailPersonal: 'customer@test.com',
-         emailWork: null,
-         name: 'Test Customer',
-       });
-      mockShopifyClient.findOrderByEmail.mockResolvedValueOnce({
+      mockShopifyClient.findOrderByOrderName.mockResolvedValueOnce({
         id: 'gid://shopify/Order/123',
         name: '#1001',
         email: 'customer@test.com',
@@ -90,11 +82,11 @@ describe('Payment Notification Flow Integration', () => {
         invoiceDate: '2026-02-15',
         dueDate: '2026-03-15',
         contact: { id: 'CONTACT-001', objectName: 'Contact' },
+        header: 'Rechnung zum Auftrag #1001',
       });
 
       // Assert
-      expect(mockSevdeskClient.getInvoiceContact).toHaveBeenCalledWith('CONTACT-001');
-      expect(mockShopifyClient.findOrderByEmail).toHaveBeenCalledWith('customer@test.com');
+      expect(mockShopifyClient.findOrderByOrderName).toHaveBeenCalledWith('1001');
       expect(mockShopifyClient.markOrderAsPaid).toHaveBeenCalledWith('gid://shopify/Order/123');
       expect(mockDbQuery).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO notification_history'),
@@ -104,12 +96,11 @@ describe('Payment Notification Flow Integration', () => {
   });
 
   describe('Error Scenarios', () => {
-    it('should handle Sevdesk API failure gracefully', async () => {
+    it('should handle missing order number in header', async () => {
       // Arrange
       mockDbQueryOne.mockResolvedValueOnce(null);
-      mockSevdeskClient.getInvoiceContact.mockRejectedValueOnce(new Error('Sevdesk API unavailable'));
 
-      // Act - function catches error internally and records failed notification
+      // Act - invoice without order number in header
       await processPaidInvoice({
         id: 'INV-001',
         invoiceNumber: '2026-00001',
@@ -119,35 +110,30 @@ describe('Payment Notification Flow Integration', () => {
         invoiceDate: '2026-02-15',
         dueDate: '2026-03-15',
         contact: { id: 'CONTACT-001', objectName: 'Contact' },
+        header: undefined,
       });
 
-      // Assert - error is caught and recorded as failed
+      // Assert - error is caught and recorded as skipped (not a failure, just no order number)
       expect(mockDbQuery).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO notification_history'),
-        expect.arrayContaining(['INV-001', 'payment_received', '', null, 'failed'])
+        expect.arrayContaining(['INV-001', 'payment_received', '', null, 'skipped'])
       );
     });
 
     it('should handle Shopify API failure gracefully', async () => {
        // Arrange
        mockDbQueryOne.mockResolvedValueOnce(null);
-       mockSevdeskClient.getInvoiceContact.mockResolvedValueOnce({
-         id: 'CONTACT-001',
-         emailPersonal: 'customer@test.com',
-         emailWork: null,
-         name: 'Test Customer',
-       });
-       mockShopifyClient.findOrderByEmail.mockResolvedValueOnce({
-         id: 'gid://shopify/Order/123',
-         name: '#1001',
-         email: 'customer@test.com',
-         displayFinancialStatus: 'PENDING',
-         totalPriceSet: {
-           shopMoney: { amount: '99.99', currencyCode: 'EUR' },
-         },
-         createdAt: '2026-02-20T10:00:00Z',
-         updatedAt: '2026-02-20T10:00:00Z',
-       });
+       mockShopifyClient.findOrderByOrderName.mockResolvedValueOnce({
+        id: 'gid://shopify/Order/123',
+        name: '#1001',
+        email: 'customer@test.com',
+        displayFinancialStatus: 'PENDING',
+        totalPriceSet: {
+          shopMoney: { amount: '99.99', currencyCode: 'EUR' },
+        },
+        createdAt: '2026-02-20T10:00:00Z',
+        updatedAt: '2026-02-20T10:00:00Z',
+      });
        mockShopifyClient.markOrderAsPaid.mockRejectedValueOnce(new Error('Shopify rate limit'));
 
       // Act
@@ -160,6 +146,7 @@ describe('Payment Notification Flow Integration', () => {
         invoiceDate: '2026-02-15',
         dueDate: '2026-03-15',
         contact: { id: 'CONTACT-001', objectName: 'Contact' },
+        header: 'Rechnung zum Auftrag #1001',
       });
 
       // Assert - should record failure
@@ -194,11 +181,11 @@ describe('Payment Notification Flow Integration', () => {
         invoiceDate: '2026-02-15',
         dueDate: '2026-03-15',
         contact: { id: 'CONTACT-001', objectName: 'Contact' },
+        header: 'Rechnung zum Auftrag #1001',
       });
 
       // Assert - Should not make any external calls
-      expect(mockSevdeskClient.getInvoiceContact).not.toHaveBeenCalled();
-      expect(mockShopifyClient.findOrderByEmail).not.toHaveBeenCalled();
+      expect(mockShopifyClient.findOrderByOrderName).not.toHaveBeenCalled();
       expect(mockShopifyClient.markOrderAsPaid).not.toHaveBeenCalled();
     });
   });

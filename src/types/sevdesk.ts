@@ -6,6 +6,7 @@ export interface SevdeskInvoice {
   currency: string;
   invoiceDate: string;
   dueDate: string;
+  header?: string; // Contains order reference like "Rechnung zum Auftrag #PE4994"
   contact: {
     id: string;
     objectName: string;

@@ -132,6 +132,58 @@ export class ShopifyClient {
   }
 
   /**
+   * Find a Shopify order by order name (e.g., "PE4994", "#1001").
+   * Returns the order matching the name.
+   */
+  async findOrderByOrderName(orderName: string): Promise<ShopifyOrder | null> {
+    if (!orderName) {
+      console.log('[shopify] No order name provided for lookup');
+      return null;
+    }
+
+    const query = `
+      query GetOrdersByName($query: String!, $first: Int!) {
+        orders(first: $first, query: $query) {
+          edges {
+            node {
+              id
+              name
+              email
+              displayFinancialStatus
+              totalPriceSet {
+                shopMoney {
+                  amount
+                  currencyCode
+                }
+              }
+              createdAt
+              updatedAt
+            }
+          }
+        }
+      }
+    `;
+
+    // Search by order name in Shopify (remove # prefix if present)
+    const cleanName = orderName.replace(/^#/, '');
+    const searchQuery = `name:${cleanName}`;
+    const response = await this.graphql<ShopifyOrdersResponse>(query, { 
+      query: searchQuery, 
+      first: 1 
+    });
+
+    if (!response.orders || response.orders.edges.length === 0) {
+      console.log(`[shopify] No order found for name: ${orderName}`);
+      return null;
+    }
+
+    const order = response.orders.edges[0].node;
+    console.log(`[shopify] Found order ${order.name} (ID: ${order.id})`);
+    
+    return order;
+  }
+
+  /**
    * Find a Shopify order by customer email.
    * Returns the most recent order matching the email.
    */

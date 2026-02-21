@@ -1,8 +1,34 @@
 import { SevdeskInvoice } from '../types/sevdesk';
-import { sevdeskClient } from '../clients/sevdesk';
 import { shopifyClient } from '../clients/shopify';
 import { query, queryOne } from '../database/connection';
 import { sendPaymentEmail } from './emailSender';
+
+/**
+ * Extract Shopify order number from Sevdesk invoice header.
+ * Examples:
+ *   "Rechnung zum Auftrag #PE4994" → "PE4994"
+ *   "Rechnung zum Auftrag #1001" → "1001"
+ * Returns null for cancellation invoices or if no order number found.
+ */
+function extractOrderNumber(header: string | null): string | null {
+  if (!header) {
+    return null;
+  }
+  
+  // Skip cancellation invoices (Stornorechnung)
+  if (header.toLowerCase().includes('stornorechnung')) {
+    console.log(`[processor] Skipping cancellation invoice: ${header}`);
+    return null;
+  }
+  
+  // Extract order number after # sign
+  const match = header.match(/#([A-Z0-9]+)/i);
+  if (match && match[1]) {
+    return match[1].toUpperCase();
+  }
+  
+  return null;
+}
 
 interface NotificationRecord {
   id: number;
@@ -69,44 +95,42 @@ export async function processPaidInvoice(invoice: SevdeskInvoice): Promise<void>
       return;
     }
 
-    // Step 2: Get customer contact from Sevdesk
-    const contact = await sevdeskClient.getInvoiceContact(invoice.contact.id);
+    // Step 2: Extract Shopify order number from invoice header
+    const orderNumber = extractOrderNumber(invoice.header ?? null);
     
-    // Sevdesk stores email in emailPersonal or emailWork, not 'email'
-    const customerEmail = contact.emailPersonal || contact.emailWork;
+    if (!orderNumber) {
+      console.log(`[processor] No Shopify order number found in invoice header: ${invoice.header || 'null'}`);
+      await recordNotification(
+        invoice.id,
+        NOTIFICATION_TYPE,
+        '',
+        null,
+        'skipped',
+        'No Shopify order number in invoice header (may be cancellation or manual invoice)'
+      );
+      return;
+    }
     
-    if (!customerEmail) {
-      console.log(`[processor] No email found for contact ${contact.name || `ID: ${contact.id}`}, cannot notify customer`);
+    console.log(`[processor] Extracted order number: ${orderNumber} from invoice header`);
+    
+    // Step 3: Find matching Shopify order by order number
+    const order = await shopifyClient.findOrderByOrderName(orderNumber);
+    
+    if (!order) {
+      console.log(`[processor] No Shopify order found for order number ${orderNumber}`);
       await recordNotification(
         invoice.id,
         NOTIFICATION_TYPE,
         '',
         null,
         'failed',
-        'No customer email found'
+        `No matching Shopify order found for order number ${orderNumber}`
       );
       return;
     }
     
-    console.log(`[processor] Found customer: ${contact.name || contact.id} (${customerEmail})`);
-    
-    // Step 3: Find matching Shopify order by customer email
-    const order = await shopifyClient.findOrderByEmail(customerEmail);
-    
-    if (!order) {
-      console.log(`[processor] No Shopify order found for ${customerEmail}, cannot update order`);
-      await recordNotification(
-        invoice.id,
-        NOTIFICATION_TYPE,
-        customerEmail,
-        null,
-        'failed',
-        'No matching Shopify order found'
-      );
-      return;
-    }
-    
-    console.log(`[processor] Found Shopify order: ${order.name} (${order.id})`);
+    const customerEmail = order.email || '';
+    console.log(`[processor] Found Shopify order: ${order.name} (${order.id}), customer: ${customerEmail || 'no email'}`);
     console.log(`[processor] Current order status: ${order.displayFinancialStatus}`);
     
     // Check if running in dry-run mode

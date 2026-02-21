@@ -83,6 +83,7 @@ export const sevdeskInvoices = {
     currency: 'EUR',
     invoiceDate: '2026-02-15',
     dueDate: '2026-03-15',
+    header: 'Rechnung zum Auftrag #1001',
     contact: {
       id: 'CONTACT-001',
       objectName: 'Contact',
@@ -97,6 +98,7 @@ export const sevdeskInvoices = {
     currency: 'EUR',
     invoiceDate: '2026-02-14',
     dueDate: '2026-03-14',
+    header: 'Rechnung zum Auftrag #1002',
     contact: {
       id: 'CONTACT-002',
       objectName: 'Contact',
@@ -111,8 +113,24 @@ export const sevdeskInvoices = {
     currency: 'EUR',
     invoiceDate: '2026-01-15',
     dueDate: '2026-02-15',
+    header: 'Rechnung zum Auftrag #1003',
     contact: {
       id: 'CONTACT-003',
+      objectName: 'Contact',
+    },
+  } as SevdeskInvoice,
+
+  cancellation: {
+    id: 'INV-2026-006',
+    invoiceNumber: '2026-00006',
+    status: '1000',
+    total: 50.00,
+    currency: 'EUR',
+    invoiceDate: '2026-02-20',
+    dueDate: '2026-03-20',
+    header: 'Stornorechnung Nr. RE251765 zur Rechnung Nr. RE251614',
+    contact: {
+      id: 'CONTACT-005',
       objectName: 'Contact',
     },
   } as SevdeskInvoice,
@@ -126,6 +144,7 @@ export const sevdeskInvoices = {
       currency: 'EUR',
       invoiceDate: '2026-02-18',
       dueDate: '2026-03-18',
+      header: 'Rechnung zum Auftrag #1003',
       contact: {
         id: 'CONTACT-004',
         objectName: 'Contact',
@@ -139,6 +158,7 @@ export const sevdeskInvoices = {
       currency: 'EUR',
       invoiceDate: '2026-02-19',
       dueDate: '2026-03-19',
+      header: 'Rechnung zum Auftrag #1004',
       contact: {
         id: 'CONTACT-004',
         objectName: 'Contact',

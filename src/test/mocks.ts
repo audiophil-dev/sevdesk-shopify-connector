@@ -38,6 +38,7 @@ export function createMockSevdeskInvoice(overrides: Partial<SevdeskInvoice> = {}
     currency: 'EUR',
     invoiceDate: '2026-02-15',
     dueDate: '2026-03-15',
+    header: 'Rechnung zum Auftrag #1001',
     contact: {
       id: 'CONTACT-123',
       objectName: 'Contact',

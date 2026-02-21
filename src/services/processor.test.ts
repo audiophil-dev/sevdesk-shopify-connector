@@ -12,6 +12,7 @@ const mockSevdeskClient = {
 
 const mockShopifyClient = {
   findOrderByEmail: jest.fn(),
+  findOrderByOrderName: jest.fn(),
   markOrderAsPaid: jest.fn(),
   getAccessToken: jest.fn(),
 };
@@ -43,12 +44,13 @@ jest.mock('../config', () => ({
     database: { url: 'postgresql://test' },
     server: { port: 3000 },
     polling: { intervalMs: 60000, enabled: false },
+    dryRun: false,
   },
 }));
 
 import { processPaidInvoice } from './processor';
 import { sendPaymentEmail } from './emailSender';
-import { sevdeskInvoices, sevdeskContacts, shopifyOrders } from '../test/fixtures';
+import { sevdeskInvoices, shopifyOrders } from '../test/fixtures';
 
 describe('Processor', () => {
   beforeEach(() => {
@@ -68,16 +70,35 @@ describe('Processor', () => {
 
       await processPaidInvoice(sevdeskInvoices.paid);
 
-      // Should not call Shopify or Sevdesk, just return early
-      expect(mockShopifyClient.findOrderByEmail).not.toHaveBeenCalled();
-      expect(mockSevdeskClient.getInvoiceContact).not.toHaveBeenCalled();
+      // Should not call Shopify, just return early
+      expect(mockShopifyClient.findOrderByOrderName).not.toHaveBeenCalled();
     });
 
-    it('should fail if no customer email found', async () => {
+    it('should skip cancellation invoices', async () => {
       // Mock: no existing notification
       mockDbQueryOne.mockResolvedValueOnce(null);
-      // Mock: contact without email
-      mockSevdeskClient.getInvoiceContact.mockResolvedValueOnce(sevdeskContacts.withoutEmail);
+
+      await processPaidInvoice(sevdeskInvoices.cancellation);
+
+      // Should record as skipped
+      expect(mockDbQuery).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO notification_history'),
+        expect.arrayContaining([
+          sevdeskInvoices.cancellation.id,
+          'payment_received',
+          '',
+          null,
+          'skipped',
+          'No Shopify order number in invoice header (may be cancellation or manual invoice)',
+        ])
+      );
+    });
+
+    it('should fail if no Shopify order found by order number', async () => {
+      // Mock: no existing notification
+      mockDbQueryOne.mockResolvedValueOnce(null);
+      // Mock: no order found
+      mockShopifyClient.findOrderByOrderName.mockResolvedValueOnce(null);
 
       await processPaidInvoice(sevdeskInvoices.paid);
 
@@ -90,29 +111,7 @@ describe('Processor', () => {
           '',
           null,
           'failed',
-        ])
-      );
-    });
-
-    it('should fail if no Shopify order found', async () => {
-      // Mock: no existing notification
-      mockDbQueryOne.mockResolvedValueOnce(null);
-      // Mock: contact with email
-      mockSevdeskClient.getInvoiceContact.mockResolvedValueOnce(sevdeskContacts.withEmail);
-      // Mock: no order found
-      mockShopifyClient.findOrderByEmail.mockResolvedValueOnce(null);
-
-      await processPaidInvoice(sevdeskInvoices.paid);
-
-      // Should record failure
-      expect(mockDbQuery).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO notification_history'),
-        expect.arrayContaining([
-          sevdeskInvoices.paid.id,
-          'payment_received',
-          sevdeskContacts.withEmail.emailPersonal,
-          null,
-          'failed',
+          'No matching Shopify order found for order number 1001',
         ])
       );
     });
@@ -120,10 +119,8 @@ describe('Processor', () => {
     it('should successfully process invoice with order match', async () => {
       // Mock: no existing notification
       mockDbQueryOne.mockResolvedValueOnce(null);
-      // Mock: contact with email
-      mockSevdeskClient.getInvoiceContact.mockResolvedValueOnce(sevdeskContacts.withEmail);
       // Mock: order found
-      mockShopifyClient.findOrderByEmail.mockResolvedValueOnce(shopifyOrders.pending);
+      mockShopifyClient.findOrderByOrderName.mockResolvedValueOnce(shopifyOrders.pending);
       // Mock: mark as paid succeeds
       mockShopifyClient.markOrderAsPaid.mockResolvedValueOnce(true);
       // Mock: notification recorded
@@ -131,6 +128,9 @@ describe('Processor', () => {
 
       await processPaidInvoice(sevdeskInvoices.paid);
 
+      // Verify order was searched by order number
+      expect(mockShopifyClient.findOrderByOrderName).toHaveBeenCalledWith('1001');
+      
       // Verify order marked as paid
       expect(mockShopifyClient.markOrderAsPaid).toHaveBeenCalledWith(shopifyOrders.pending.id);
 
@@ -140,7 +140,7 @@ describe('Processor', () => {
          expect.arrayContaining([
            sevdeskInvoices.paid.id,
            'payment_received',
-           sevdeskContacts.withEmail.emailPersonal,
+           shopifyOrders.pending.email,
            shopifyOrders.pending.id,
            'sent',
          ])
@@ -150,10 +150,8 @@ describe('Processor', () => {
     it('should handle markOrderAsPaid failure', async () => {
       // Mock: no existing notification
       mockDbQueryOne.mockResolvedValueOnce(null);
-      // Mock: contact with email
-      mockSevdeskClient.getInvoiceContact.mockResolvedValueOnce(sevdeskContacts.withEmail);
       // Mock: order found
-      mockShopifyClient.findOrderByEmail.mockResolvedValueOnce(shopifyOrders.pending);
+      mockShopifyClient.findOrderByOrderName.mockResolvedValueOnce(shopifyOrders.pending);
       // Mock: mark as paid fails
       mockShopifyClient.markOrderAsPaid.mockRejectedValueOnce(new Error('API Error'));
 
@@ -165,7 +163,7 @@ describe('Processor', () => {
          expect.arrayContaining([
            sevdeskInvoices.paid.id,
            'payment_received',
-           sevdeskContacts.withEmail.emailPersonal,
+           shopifyOrders.pending.email,
            shopifyOrders.pending.id,
            'failed',
          ])
@@ -175,10 +173,8 @@ describe('Processor', () => {
     it('should continue even if email sending fails', async () => {
       // Mock: no existing notification
       mockDbQueryOne.mockResolvedValueOnce(null);
-      // Mock: contact with email
-      mockSevdeskClient.getInvoiceContact.mockResolvedValueOnce(sevdeskContacts.withEmail);
       // Mock: order found
-      mockShopifyClient.findOrderByEmail.mockResolvedValueOnce(shopifyOrders.pending);
+      mockShopifyClient.findOrderByOrderName.mockResolvedValueOnce(shopifyOrders.pending);
       // Mock: mark as paid succeeds
       mockShopifyClient.markOrderAsPaid.mockResolvedValueOnce(true);
       // Mock: email fails
@@ -194,7 +190,7 @@ describe('Processor', () => {
          expect.arrayContaining([
            sevdeskInvoices.paid.id,
            'payment_received',
-           sevdeskContacts.withEmail.emailPersonal,
+           shopifyOrders.pending.email,
            shopifyOrders.pending.id,
            'sent',
          ])
