@@ -29,47 +29,37 @@ export class ShopifyClient {
       return this.accessToken;
     }
 
-    // Option 2: Exchange authorization code for access token
-    // This requires the user to first visit the OAuth authorization URL
-    // and then provide the authorization code via SHOPIFY_AUTH_CODE env var
-    const authCode = process.env.SHOPIFY_AUTH_CODE;
-    if (authCode) {
-      const url = `${this.getShopifyUrl()}/admin/oauth/access_token`;
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          client_id: config.shopify.clientId,
-          client_secret: config.shopify.clientSecret,
-          code: authCode,
-        }),
-      });
+    // Option 2: Use client credentials grant (for Dev Dashboard apps)
+    // See: https://shopify.dev/docs/apps/build/dev-dashboard/get-api-access-tokens
+    const url = `${this.getShopifyUrl()}/admin/oauth/access_token`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: config.shopify.clientId,
+        client_secret: config.shopify.clientSecret,
+      }).toString(),
+    });
 
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Failed to get Shopify access token: ${response.status} ${error}`);
-      }
-
-      const data = await response.json() as ShopifyAccessTokenResponse;
-      
-      this.accessToken = data.access_token;
-      // Shopify access tokens from OAuth don't expire
-      this.tokenExpiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 year
-      
-      console.log(`[shopify] Token acquired via OAuth code exchange`);
-      
-      return this.accessToken;
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Failed to get Shopify access token: ${response.status} ${error}`);
     }
 
-    throw new Error(
-      'No Shopify access token available. Either:\n' +
-      '1. Set SHOPIFY_ACCESS_TOKEN in your .env file (get it from Shopify Admin > Settings > Apps > Custom App)\n' +
-      '2. Or visit the OAuth URL and set SHOPIFY_AUTH_CODE:\n' +
-      `   ${this.getShopifyUrl()}/admin/oauth/authorize?client_id=${config.shopify.clientId}&scope=read_orders,write_orders&redirect_uri=http://localhost:3000/callback&response_type=code&state=random`
-    );
+    const data = await response.json() as ShopifyAccessTokenResponse;
+    
+    this.accessToken = data.access_token;
+    // Token expires in ~24 hours (86399 seconds), refresh 1 hour before expiry
+    const expiresIn = data.expires_in || 86399;
+    this.tokenExpiresAt = new Date(Date.now() + (expiresIn - 3600) * 1000);
+    
+    console.log(`[shopify] Token acquired via client credentials (expires in ${Math.floor(expiresIn / 3600)}h)`);
+    
+    return this.accessToken;
   }
 
   async graphql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
