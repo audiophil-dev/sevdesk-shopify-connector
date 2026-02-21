@@ -1,10 +1,20 @@
 import { config } from '../config';
+import * as fs from 'fs';
+import * as path from 'path';
 import { 
   ShopifyAccessTokenResponse, 
   ShopifyGraphQLResponse, 
   ShopifyOrdersResponse,
   ShopifyOrder
 } from '../types/shopify';
+
+interface StoredToken {
+  accessToken: string;
+  expiresAt: string; // ISO date string
+  scope: string;
+}
+
+const TOKEN_FILE = path.join(process.cwd(), '.shopify-token.json');
 
 export class ShopifyClient {
   private accessToken: string | null = null;
@@ -14,8 +24,48 @@ export class ShopifyClient {
     return config.shopify.shop;
   }
 
+  /**
+   * Load token from persistent storage (file).
+   * Returns null if file doesn't exist or token is expired.
+   */
+  private loadTokenFromFile(): StoredToken | null {
+    try {
+      if (!fs.existsSync(TOKEN_FILE)) {
+        return null;
+      }
+      
+      const data = fs.readFileSync(TOKEN_FILE, 'utf-8');
+      const token = JSON.parse(data) as StoredToken;
+      
+      // Check if token is still valid (with 1 hour buffer)
+      const expiresAt = new Date(token.expiresAt);
+      const bufferMs = 60 * 60 * 1000; // 1 hour
+      if (new Date().getTime() + bufferMs >= expiresAt.getTime()) {
+        console.log('[shopify] Stored token has expired, will fetch new one');
+        return null;
+      }
+      
+      return token;
+    } catch (error) {
+      console.log('[shopify] Failed to load token from file:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Save token to persistent storage (file).
+   */
+  private saveTokenToFile(token: StoredToken): void {
+    try {
+      fs.writeFileSync(TOKEN_FILE, JSON.stringify(token, null, 2));
+      console.log('[shopify] Token saved to file for reuse');
+    } catch (error) {
+      console.error('[shopify] Failed to save token to file:', error);
+    }
+  }
+
   private async getAccessToken(): Promise<string> {
-    // Check if we have a valid cached token
+    // Check if we have a valid cached token in memory
     if (this.accessToken && this.tokenExpiresAt && new Date() < this.tokenExpiresAt) {
       return this.accessToken;
     }
@@ -29,8 +79,19 @@ export class ShopifyClient {
       return this.accessToken;
     }
 
-    // Option 2: Use client credentials grant (for Dev Dashboard apps)
+    // Option 2: Try to load token from file
+    const storedToken = this.loadTokenFromFile();
+    if (storedToken) {
+      this.accessToken = storedToken.accessToken;
+      this.tokenExpiresAt = new Date(storedToken.expiresAt);
+      console.log(`[shopify] Using stored token (expires at ${this.tokenExpiresAt.toISOString()})`);
+      return this.accessToken;
+    }
+
+    // Option 3: Fetch new token via client credentials grant (for Dev Dashboard apps)
     // See: https://shopify.dev/docs/apps/build/dev-dashboard/get-api-access-tokens
+    console.log('[shopify] Fetching new access token via client credentials...');
+    
     const url = `${this.getShopifyUrl()}/admin/oauth/access_token`;
     
     const response = await fetch(url, {
@@ -56,6 +117,13 @@ export class ShopifyClient {
     // Token expires in ~24 hours (86399 seconds), refresh 1 hour before expiry
     const expiresIn = data.expires_in || 86399;
     this.tokenExpiresAt = new Date(Date.now() + (expiresIn - 3600) * 1000);
+    
+    // Save token to file for reuse
+    this.saveTokenToFile({
+      accessToken: this.accessToken,
+      expiresAt: this.tokenExpiresAt.toISOString(),
+      scope: data.scope,
+    });
     
     console.log(`[shopify] Token acquired via client credentials (expires in ${Math.floor(expiresIn / 3600)}h)`);
     

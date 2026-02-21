@@ -17,3 +17,6 @@ logs/
 .worktrees/
 handovers/
 .work-session-active
+
+# Shopify token cache
+.shopify-token.json

@@ -28,5 +28,6 @@ export interface ShopifyGraphQLResponse<T> {
 
 export interface ShopifyAccessTokenResponse {
   access_token: string;
+  scope: string;
   expires_in: number;
 }
