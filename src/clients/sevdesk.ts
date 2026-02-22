@@ -49,21 +49,31 @@ export class SevdeskClient {
 
   async getPaidInvoices(since?: Date): Promise<SevdeskInvoice[]> {
     // Sevdesk uses numeric status codes: 1000 = Paid
-    let endpoint = '/Invoice?status=1000';
-    
-    if (since) {
-      const dateStr = since.toISOString().split('T')[0];
-      endpoint += `&invoiceDateFrom=${dateStr}`;
-    }
-    
-    // Limit to recent invoices for performance
-    endpoint += '&limit=100';
+    // We fetch all paid invoices and filter by update time in memory
+    // This is more reliable than invoiceDateFrom which filters by creation date
+    const endpoint = '/Invoice?status=1000&limit=100';
     
     const response = await this.request<SevdeskInvoiceResponse>(endpoint);
     
-    console.log(`[sevdesk] Found ${response.objects.length} paid invoices`);
+    let invoices = response.objects;
     
-    return response.objects;
+    // Filter by update time if provided
+    // This ensures we only process invoices whose status changed recently
+    if (since) {
+      const sinceTime = since.getTime();
+      invoices = invoices.filter(invoice => {
+        if (!invoice.update) {
+          // If no update time, include it (safety net)
+          return true;
+        }
+        const updateTime = new Date(invoice.update).getTime();
+        return updateTime >= sinceTime;
+      });
+    }
+    
+    console.log(`[sevdesk] Found ${invoices.length} paid invoices updated since ${since?.toISOString() || 'ever'}`);
+    
+    return invoices;
   }
 
   async getInvoiceContact(contactId: string): Promise<SevdeskContact> {

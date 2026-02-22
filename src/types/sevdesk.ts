@@ -7,6 +7,7 @@ export interface SevdeskInvoice {
   invoiceDate: string;
   dueDate: string;
   header?: string; // Contains order reference like "Rechnung zum Auftrag #PE4994"
+  update?: string; // ISO date string of last modification (includes status changes)
   contact: {
     id: string;
     objectName: string;

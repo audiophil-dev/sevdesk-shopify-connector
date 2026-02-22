@@ -20,8 +20,29 @@ export class ShopifyClient {
   private accessToken: string | null = null;
   private tokenExpiresAt: Date | null = null;
 
+  /**
+   * Get the Shopify shop URL in the correct format.
+   * Handles multiple input formats:
+   * - "paurum-dev-shop" -> "https://paurum-dev-shop.myshopify.com"
+   * - "paurum-dev-shop.myshopify.com" -> "https://paurum-dev-shop.myshopify.com"
+   * - "https://admin.shopify.com/store/paurum-dev-shop" -> "https://paurum-dev-shop.myshopify.com"
+   */
   private getShopifyUrl(): string {
-    return config.shopify.shop;
+    const shop = config.shopify.shop;
+    
+    // Already a full myshopify.com URL
+    if (shop.includes('.myshopify.com')) {
+      return shop.startsWith('https://') ? shop : `https://${shop}`;
+    }
+    
+    // Admin URL format: https://admin.shopify.com/store/{shop-name}
+    const adminMatch = shop.match(/admin\.shopify\.com\/store\/([^\/]+)/);
+    if (adminMatch) {
+      return `https://${adminMatch[1]}.myshopify.com`;
+    }
+    
+    // Just the shop name
+    return `https://${shop}.myshopify.com`;
   }
 
   /**

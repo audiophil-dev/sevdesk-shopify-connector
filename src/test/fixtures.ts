@@ -84,6 +84,7 @@ export const sevdeskInvoices = {
     invoiceDate: '2026-02-15',
     dueDate: '2026-03-15',
     header: 'Rechnung zum Auftrag #1001',
+    update: '2026-02-21T10:00:00Z', // Recently updated (paid)
     contact: {
       id: 'CONTACT-001',
       objectName: 'Contact',
@@ -99,6 +100,7 @@ export const sevdeskInvoices = {
     invoiceDate: '2026-02-14',
     dueDate: '2026-03-14',
     header: 'Rechnung zum Auftrag #1002',
+    update: '2026-02-14T10:00:00Z',
     contact: {
       id: 'CONTACT-002',
       objectName: 'Contact',
@@ -114,6 +116,7 @@ export const sevdeskInvoices = {
     invoiceDate: '2026-01-15',
     dueDate: '2026-02-15',
     header: 'Rechnung zum Auftrag #1003',
+    update: '2026-02-15T10:00:00Z',
     contact: {
       id: 'CONTACT-003',
       objectName: 'Contact',
@@ -129,6 +132,7 @@ export const sevdeskInvoices = {
     invoiceDate: '2026-02-20',
     dueDate: '2026-03-20',
     header: 'Stornorechnung Nr. RE251765 zur Rechnung Nr. RE251614',
+    update: '2026-02-20T10:00:00Z',
     contact: {
       id: 'CONTACT-005',
       objectName: 'Contact',
@@ -145,6 +149,7 @@ export const sevdeskInvoices = {
       invoiceDate: '2026-02-18',
       dueDate: '2026-03-18',
       header: 'Rechnung zum Auftrag #1003',
+      update: '2026-02-21T09:00:00Z',
       contact: {
         id: 'CONTACT-004',
         objectName: 'Contact',
@@ -159,6 +164,7 @@ export const sevdeskInvoices = {
       invoiceDate: '2026-02-19',
       dueDate: '2026-03-19',
       header: 'Rechnung zum Auftrag #1004',
+      update: '2026-02-21T08:00:00Z',
       contact: {
         id: 'CONTACT-004',
         objectName: 'Contact',

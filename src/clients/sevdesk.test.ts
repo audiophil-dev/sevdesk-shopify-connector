@@ -86,19 +86,29 @@ describe('SevdeskClient', () => {
       );
     });
 
-    it('should include date filter when since parameter provided', async () => {
+    it('should filter by update time when since parameter provided', async () => {
+      // Mock response with invoices having different update times
+      const recentInvoice = {
+        ...sevdeskInvoices.paid,
+        update: '2026-02-21T10:00:00Z', // Recent
+      };
+      const oldInvoice = {
+        ...sevdeskInvoices.paid,
+        id: 'INV-OLD',
+        update: '2025-12-01T10:00:00Z', // Old
+      };
+
       mockFetch.mockResolvedValue({
         ok: true,
-        json: async () => ({ objects: [], total: 0 }),
+        json: async () => ({ objects: [recentInvoice, oldInvoice], total: 2 }),
       });
 
-      const since = new Date('2026-01-01');
-      await client.getPaidInvoices(since);
+      const since = new Date('2026-02-21T00:00:00Z');
+      const result = await client.getPaidInvoices(since);
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('invoiceDateFrom=2026-01-01'),
-        expect.any(Object)
-      );
+      // Should only return the recent invoice
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('INV-2026-001');
     });
 
     it('should return empty array when no paid invoices', async () => {

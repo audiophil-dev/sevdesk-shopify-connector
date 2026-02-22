@@ -43,4 +43,11 @@ None
 
 ---
 
-**Last Updated**: 2026-02-20 22:35:00
+**Last Updated**: 2026-02-21 10:30:00
+
+## Recent Changes
+- [2026-02-21] Fixed Shopify OAuth URL format (use .myshopify.com domain)
+- [2026-02-21] Changed invoice filtering from invoiceDateFrom to update time filter
+  - Now filters by `invoice.update` field (when invoice was last modified)
+  - Correctly catches invoices that were created earlier but paid recently
+  - All 28 tests passing
