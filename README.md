@@ -4,19 +4,41 @@ Automatically sends payment confirmation emails to customers when payments are r
 
 ## Features
 
-- Polls Sevdesk for paid invoices
+- Polls Sevdesk for paid invoices at configurable intervals
 - Updates Shopify order status to "paid"
 - Sends customer email notifications via Shopify
-- Prevents duplicate notifications (idempotency)
-- Tracks notification history in PostgreSQL
+- Prevents duplicate notifications through idempotency checks
+- Tracks notification history in PostgreSQL for audit trails
+- Handles API rate limiting with exponential backoff
 
 ## Quick Start
 
-1. Complete prerequisites (see `docs/setup-guide.md`)
-2. Install dependencies: `npm install`
-3. Configure environment: `cp .env.example .env`
-4. Run migrations: `npm run migrate`
-5. Start server: `npm run dev`
+### Prerequisites
+
+- Node.js 18 or higher
+- PostgreSQL 14 or higher
+- Shopify Admin API access
+- Sevdesk API key
+
+### Installation
+
+1. Complete prerequisites setup (see `docs/setup-guide.md`)
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Configure environment:
+   ```bash
+   cp .env.example .env
+   ```
+4. Run database migrations:
+   ```bash
+   npm run migrate
+   ```
+5. Start the server:
+   ```bash
+   npm run dev
+   ```
 
 ## Configuration
 
@@ -31,14 +53,6 @@ Automatically sends payment confirmation emails to customers when payments are r
 | `POLL_INTERVAL_MS` | Polling interval in ms (default: 60000) | No |
 | `ENABLE_POLLING` | Enable polling (true/false) | No |
 
-## Development
-
-- `npm run dev` - Start development server
-- `npm test` - Run tests
-- `npm run test:coverage` - Run tests with coverage
-- `npm run build` - Build for production
-- `npm run migrate` - Run database migrations
-
 ## Architecture
 
 ```
@@ -50,7 +64,21 @@ Polling Job (every 60 seconds)
   -> Record notification in database
 ```
 
-## Testing
+For detailed architecture documentation, see `docs/architecture.md`.
+
+## Development
+
+### Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server with hot reload |
+| `npm test` | Run all tests |
+| `npm run test:coverage` | Run tests with coverage report |
+| `npm run build` | Build for production |
+| `npm run migrate` | Run database migrations |
+
+### Testing
 
 The project includes comprehensive tests:
 
@@ -60,14 +88,20 @@ The project includes comprehensive tests:
 
 Run tests:
 ```bash
-npm test           # Run all tests
-npm run test:coverage  # Run with coverage report
+npm test              # Run all tests
+npm run test:coverage # Run with coverage report
 ```
 
 ## Documentation
 
-- [Setup Guide](docs/setup-guide.md) - Step-by-step setup instructions
-- [Deployment Guide](docs/deployment-guide.md) - Production deployment
+| Document | Description |
+|----------|-------------|
+| [Architecture](docs/architecture.md) | System design and component interactions |
+| [API Reference](docs/api-reference.md) | Sevdesk and Shopify API endpoints |
+| [Configuration Guide](docs/configuration-guide.md) | Environment setup and configuration |
+| [Best Practices](docs/best-practices.md) | Development and deployment guidelines |
+| [Setup Guide](docs/setup-guide.md) | Step-by-step setup instructions |
+| [Deployment Guide](docs/deployment-guide.md) | Production deployment instructions |
 
 ## License
 
