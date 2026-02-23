@@ -1,0 +1,38 @@
+{
+  "tasks": [
+    {
+      "role": "enhance-project-documentation",
+      "agent": "documentation-writer",
+      "description": "Document current project state: architecture overview, API endpoints, deployment procedures, configuration options, and best practices",
+      "cwd": "/workspace/sevdesk-shopify-connector",
+      "dependencies": [],
+      "context": {
+        "objectives": [
+          "Create comprehensive architecture documentation (system overview, data flow, component interactions)",
+          "Document all API endpoints and their usage patterns",
+          "Update README.md with latest features and clear navigation",
+          "Enhance deployment guide with troubleshooting and monitoring details",
+          "Document configuration options and environment variables",
+          "Add best practices guide for development and operations",
+          "Ensure all documentation follows Klong standards (see docs/global/documentation)"
+        ],
+        "deliverables": [
+          "docs/architecture.md - System design, data flows, component interactions",
+          "docs/api-reference.md - All endpoints with examples and error handling",
+          "docs/configuration-guide.md - All env vars, sensible defaults, validation rules",
+          "docs/best-practices.md - Development, testing, and operational best practices",
+          "Updated README.md with navigation and quick reference",
+          "Updated docs/deployment-guide.md with monitoring and troubleshooting"
+        ],
+        "acceptance_criteria": [
+          "All documentation is clear, concise, and follows Klong standards",
+          "No documentation contradicts actual code implementation",
+          "All configuration options documented with examples",
+          "Architecture guide explains data flow and system design",
+          "README provides clear entry point with table of contents",
+          "Documentation includes error handling and troubleshooting guidance"
+        ]
+      }
+    }
+  ]
+}

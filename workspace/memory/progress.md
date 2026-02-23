@@ -28,19 +28,22 @@
 - [2026-02-22] Updated A2-plan with Task 0 (environment setup)
 - [2026-02-22] Created comprehensive-synthesis.md (master reference document)
 - [2026-02-22] Created architecture-diagrams.md (7 Mermaid diagrams)
+- [2026-02-22] A2-plan COMPLETE: Project foundation (17 files, 11 acceptance criteria)
+- [2026-02-22] A3-plan COMPLETE: Shopify integration (order lookup, status update, email)
+- [2026-02-22] A4-plan COMPLETE: Testing (87.83% coverage, 28 tests) and documentation
+- [2026-02-22] Fixed Shopify OAuth URL format (handles both admin.shopify.com and myshopify.com)
+- [2026-02-22] Fixed invoice filtering to use update time instead of creation date
 
 ## In Progress
-None - Planning complete, ready for Phase 1 implementation
+None - Bug fixes complete, ready for production testing
 
 ## Next
-- PostgreSQL installation (user action - 10 min)
-- Invoke @backend-specialist with A2-plan.md for Phase 1 implementation
-- Phase 1: Project foundation (5-6 hours)
-- Phase 2: Shopify integration (4-5 hours)
-- Phase 3: Testing & documentation (3-4 hours)
+- Test OAuth flow with actual Shopify credentials
+- Monitor invoice processing logs for filtered count
+- Deploy to Uberspace (follow docs/deployment-guide.md)
 
 ## Blocked
-PostgreSQL installation needed (user action)
+None - bug fixes complete
 
 ---
 
