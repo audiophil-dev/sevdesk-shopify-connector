@@ -2,8 +2,8 @@
  * Unit tests for email sender service
  */
 
-import { sendPaymentEmail, sendPaymentReminderEmail } from '../services/emailSender';
-import { shopifyOrders } from '../test/fixtures';
+import { sendPaymentEmail, sendPaymentReminderEmail } from '../../../src/services/emailSender';
+import { shopifyOrders } from '../../../tests/fixtures/fixtures';
 
 // Mock console to suppress logs during tests
 jest.spyOn(console, 'log').mockImplementation(() => {});

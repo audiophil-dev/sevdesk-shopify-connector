@@ -1,0 +1,1 @@
+/workspace/sevdesk-shopify-connector/memory-bank/taskRegistry.md

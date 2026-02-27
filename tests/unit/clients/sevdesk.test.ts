@@ -16,8 +16,8 @@ jest.mock('../config', () => ({
   },
 }));
 
-import { SevdeskClient } from './sevdesk';
-import { apiResponses, sevdeskInvoices, sevdeskContacts } from '../test/fixtures';
+import { SevdeskClient } from '../../../src/clients/sevdesk';
+import { apiResponses, sevdeskInvoices, sevdeskContacts } from '../../../tests/fixtures/fixtures';
 
 describe('SevdeskClient', () => {
   let client: SevdeskClient;

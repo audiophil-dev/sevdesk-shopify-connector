@@ -22,7 +22,7 @@ jest.mock('../config', () => ({
 }));
 
 // Import after mocking
-import { ShopifyClient } from '../clients/shopify';
+import { ShopifyClient } from '../../../src/clients/shopify';
 
 describe('ShopifyClient', () => {
   let client: ShopifyClient;
