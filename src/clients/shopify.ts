@@ -5,7 +5,9 @@ import {
   ShopifyAccessTokenResponse, 
   ShopifyGraphQLResponse, 
   ShopifyOrdersResponse,
-  ShopifyOrder
+  ShopifyOrder,
+  StagedUploadTarget,
+  BulkOperation,
 } from '../types/shopify';
 
 interface StoredToken {
@@ -154,7 +156,7 @@ export class ShopifyClient {
   async graphql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
     const token = await this.getAccessToken();
     
-    const response = await fetch(`${this.getShopifyUrl()}/admin/api/2024-01/graphql.json`, {
+    const response = await fetch(`${this.getShopifyUrl()}/admin/api/2024-10/graphql.json`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -380,6 +382,260 @@ export class ShopifyClient {
 
     console.log(`[shopify] Order ${orderId} marked as paid (status: ${response.orderUpdate.order.displayFinancialStatus})`);
     return true;
+  }
+
+  /**
+   * Create a staged upload target for bulk operations.
+   * Returns URL and resource ID for uploading files.
+   */
+  async stagedUploadsCreate(filename: string, fileSize: number): Promise<import { StagedUploadTarget }> {
+    const token = await this.getAccessToken();
+    const query = `
+      mutation StagedUploadsCreate($input: StagedUploadTargetCreateInput!) {
+        stagedUploadsCreate {
+          stagedUploadTarget {
+            url
+            resource {
+              ... on BulkOperationResource {
+                __typename
+              }
+            }
+          }
+          parameters {
+            name
+            value
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `;
+    
+    const response = await this.graphql<{
+      stagedUploadsCreate: {
+        stagedUploadTarget: {
+          url: string;
+          resource: any;
+          parameters: Array<{ name: string; value: string }> | null;
+          userErrors: Array<{ field: string; message: string }> | null;
+        };
+      };
+    }>(query, {
+      input: {
+        filename,
+        fileSize,
+        resource: 'BULK_MUTATION_VARIABLES',
+      },
+    });
+
+    if (response.stagedUploadsCreate.userErrors && response.stagedUploadsCreate.userErrors.length > 0) {
+      const errorMessages = response.stagedUploadsCreate.userErrors
+        .map(e => `${e.field}: ${e.message}`)
+        .join(', ');
+      throw new Error(`Failed to create staged upload: ${errorMessages}`);
+    }
+
+    if (!response.stagedUploadsCreate.stagedUploadTarget) {
+      throw new Error('Staged upload creation returned no target');
+    }
+
+    return response.stagedUploadsCreate.stagedUploadTarget;
+  }
+
+  /**
+   * Upload content to a staged upload target URL.
+   * Uses native fetch with multipart form data.
+   */
+  async uploadToStagedTarget(target: import { StagedUploadTarget }, content: Buffer): Promise<void> {
+    const formData = new FormData();
+    formData.append('file', content, target.parameters[0].value);
+
+    const response = await fetch(target.url, {
+      method: 'PUT',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Failed to upload to staged target: ${response.status} ${error}`);
+    }
+
+    console.log(`[shopify] Successfully uploaded to staged target`);
+  }
+
+  /**
+   * Run a bulk operation mutation.
+   * Returns operation ID for polling.
+   */
+  async bulkOperationRunMutation(mutation: string, uploadPath: string): Promise<string> {
+    const token = await this.getAccessToken();
+    const query = `
+      mutation BulkOperationRun($input: BulkOperationRunInput!) {
+        bulkOperationRun {
+          bulkOperation {
+            id
+            status
+            errorCode
+            objectCount
+            url
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      }
+    `;
+    
+    const response = await this.graphql<{
+      bulkOperationRun: {
+        bulkOperation: {
+          id: string;
+          status: string;
+          errorCode?: string;
+          objectCount: number;
+          url?: string;
+          userErrors: Array<{ field: string; message: string }> | null;
+        };
+      };
+    }>(query, {
+      input: {
+        mutation,
+        stagedUploadPath: uploadPath,
+      },
+    });
+
+    if (response.bulkOperationRun.userErrors && response.bulkOperationRun.userErrors.length > 0) {
+      const errorMessages = response.bulkOperationRun.userErrors
+        .map(e => `${e.field}: ${e.message}`)
+        .join(', ');
+      throw new Error(`Failed to run bulk operation: ${errorMessages}`);
+    }
+
+    if (!response.bulkOperationRun.bulkOperation) {
+      throw new Error('Bulk operation run returned no operation');
+    }
+
+    console.log(`[shopify] Bulk operation started: ${response.bulkOperationRun.bulkOperation.id}`);
+    return response.bulkOperationRun.bulkOperation.id;
+  }
+
+  /**
+   * Get the status of a bulk operation.
+   */
+  async getBulkOperationStatus(operationId: string): Promise<import { BulkOperation }> {
+    const token = await this.getAccessToken();
+    const query = `
+      query GetBulkOperation($id: ID!) {
+        node {
+          ... on BulkOperation {
+            id
+            status
+            errorCode
+            objectCount
+            url
+          }
+        }
+      }
+    `;
+    
+    const response = await this.graphql<{
+      node: import { BulkOperation } | null;
+    }>(query, { id: operationId });
+
+    if (!response.node) {
+      throw new Error(`Bulk operation not found: ${operationId}`);
+    }
+
+    return response.node;
+  }
+
+  /**
+   * Get all products with variants from the shop.
+   * Returns Map<SKU, { productId: string, variants: Map<SKU, variantGID> }>.
+   */
+  async getAllProductsWithVariants(): Promise<Map<string, { id: string; variants: Map<string, string> }>> {
+    const token = await this.getAccessToken();
+    const productMap = new Map<string, { id: string; variants: Map<string, string> }>();
+    let hasNextPage = true;
+    let cursor: string | null = null;
+
+    while (hasNextPage) {
+      const query = `
+        query GetProductsWithVariants($first: Int!, $after: String) {
+          products(first: $first, after: $after) {
+            edges {
+              node {
+                id
+                handle
+                variants(first: 100) {
+                  edges {
+                    node {
+                      id
+                      sku
+                    }
+                  }
+                }
+              }
+            }
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+          }
+        }
+      `;
+      
+      const response = await this.graphql<{
+        products: {
+          edges: Array<{
+            node: {
+              id: string;
+              handle: string;
+              variants: {
+                edges: Array<{
+                  node: {
+                    id: string;
+                    sku: string | null;
+                  }>;
+                };
+              };
+            };
+          }>;
+          pageInfo: {
+            hasNextPage: boolean;
+            endCursor: string | null;
+          };
+        };
+      }>(query, {
+        first: 50,
+        after: cursor,
+      });
+
+      for (const edge of response.products.edges) {
+        const variantMap = new Map<string, string>();
+        
+        for (const variantEdge of edge.node.variants.edges) {
+          if (variantEdge.node.sku) {
+            variantMap.set(variantEdge.node.sku, variantEdge.node.id);
+          }
+        }
+        
+        // Also map by handle in case SKU lookup fails
+        productMap.set(edge.node.handle, {
+          id: edge.node.id,
+          variants: variantMap,
+        });
+      }
+
+      hasNextPage = response.products.pageInfo.hasNextPage;
+      cursor = response.products.pageInfo.endCursor;
+    }
+
+    console.log(`[shopify] Fetched ${productMap.size} products with variants`);
+    return productMap;
   }
 }
 
