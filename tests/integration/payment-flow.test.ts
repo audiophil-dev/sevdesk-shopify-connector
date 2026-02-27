@@ -20,24 +20,24 @@ const mockShopifyClient = {
 const mockDbQuery = jest.fn();
 const mockDbQueryOne = jest.fn();
 
-jest.mock('../../../src/clients/sevdesk', () => ({
+jest.mock('../../src/clients/sevdesk', () => ({
   sevdeskClient: mockSevdeskClient,
 }));
 
-jest.mock('../../../src/clients/shopify', () => ({
+jest.mock('../../src/clients/shopify', () => ({
   shopifyClient: mockShopifyClient,
 }));
 
-jest.mock('../../../src/database/connection', () => ({
+jest.mock('../../src/database/connection', () => ({
   query: mockDbQuery,
   queryOne: mockDbQueryOne,
 }));
 
-jest.mock('../../../src/services/emailSender', () => ({
+jest.mock('../../src/services/emailSender', () => ({
   sendPaymentEmail: jest.fn().mockResolvedValue({ success: true }),
 }));
 
-jest.mock('../../../src/config', () => ({
+jest.mock('../../src/config', () => ({
   config: {
     shopify: { shop: 'test-shop', clientId: 'test-id', clientSecret: 'test-secret' },
     sevdesk: { apiKey: 'test-key', baseUrl: 'https://test.sevdesk.de' },

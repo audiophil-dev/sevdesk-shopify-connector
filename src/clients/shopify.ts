@@ -36,7 +36,7 @@ export class ShopifyClient {
     }
     
     // Admin URL format: https://admin.shopify.com/store/{shop-name}
-    const adminMatch = shop.match(/admin\.shopify\.com\/store\/([^\/]+)/);
+    const adminMatch = shop.match(/admin\.shopify\.com\/store\/([^/]+)/);
     if (adminMatch) {
       return `https://${adminMatch[1]}.myshopify.com`;
     }
