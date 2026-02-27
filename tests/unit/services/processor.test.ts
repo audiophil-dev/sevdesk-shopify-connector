@@ -20,20 +20,20 @@ const mockShopifyClient = {
 const mockDbQuery = jest.fn();
 const mockDbQueryOne = jest.fn();
 
-jest.mock('../clients/sevdesk', () => ({
+jest.mock('../../../src/clients/sevdesk', () => ({
   sevdeskClient: mockSevdeskClient,
 }));
 
-jest.mock('../clients/shopify', () => ({
+jest.mock('../../../src/clients/shopify', () => ({
   shopifyClient: mockShopifyClient,
 }));
 
-jest.mock('../database/connection', () => ({
+jest.mock('../../../src/database/connection', () => ({
   query: mockDbQuery,
   queryOne: mockDbQueryOne,
 }));
 
-jest.mock('../services/emailSender', () => ({
+jest.mock('../../../src/services/emailSender', () => ({
   sendPaymentEmail: jest.fn().mockResolvedValue({ success: true }),
 }));
 
@@ -48,9 +48,9 @@ jest.mock('../config', () => ({
   },
 }));
 
-import { processPaidInvoice } from './processor';
-import { sendPaymentEmail } from './emailSender';
-import { sevdeskInvoices, shopifyOrders } from '../test/fixtures';
+import { processPaidInvoice } from '../../../src/services/processor';
+import { sendPaymentEmail } from '../../../src/services/emailSender';
+import { sevdeskInvoices, shopifyOrders } from '../../../tests/fixtures/fixtures';
 
 describe('Processor', () => {
   beforeEach(() => {

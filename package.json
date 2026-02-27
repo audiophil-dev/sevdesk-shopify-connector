@@ -41,8 +41,11 @@
       "json"
     ],
     "setupFilesAfterEnv": [
+      "./tests/setup/jest.setup.ts",
       "./tests/e2e/setup/jest.setup.ts"
-    ]
+    ],
+    "globalSetup": "./tests/setup/globalSetup.ts",
+    "globalTeardown": "./tests/setup/globalTeardown.ts"
   },
   "dependencies": {
     "dotenv": "^16.3.1",
