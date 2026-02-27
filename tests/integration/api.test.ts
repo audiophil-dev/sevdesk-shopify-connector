@@ -1,6 +1,7 @@
 import request from 'supertest';
 import app from '../../src/server';
-import { setupTestDatabase, teardownTestDatabase, resetTestData, getTestPool } from './setup/database';
+import { setupTestDatabase, teardownTestDatabase, resetTestData, getTestPool } from '../setup/database';
+import express from 'express';
 
 describe('API Integration Tests', () => {
   beforeAll(async () => {
@@ -70,7 +71,7 @@ describe('API Integration Tests', () => {
       tempApp.get('/test-error', () => {
         throw new Error('Test error');
       });
-      tempApp.use((err: Error, req: any, res: any, next: any) => {
+      tempApp.use((err: Error, _req: any, res: any, _next: any) => {
         res.status(500).json({
           error: err.message,
           status: 500
@@ -89,7 +90,7 @@ describe('API Integration Tests', () => {
       tempApp.get('/test-error', () => {
         throw new Error('Test error message');
       });
-      tempApp.use((err: Error, req: any, res: any, next: any) => {
+      tempApp.use((err: Error, _req: any, res: any, _next: any) => {
         res.status(500).json({
           error: err.message,
           status: 500

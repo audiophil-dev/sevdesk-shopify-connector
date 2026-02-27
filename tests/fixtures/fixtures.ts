@@ -2,8 +2,8 @@
  * Test fixtures - Sample data for tests
  */
 
-import { SevdeskInvoice, SevdeskContact } from '../../../tests/fixtures/fixtures';
-import { ShopifyOrder } from '../../../tests/fixtures/fixtures';
+import { SevdeskInvoice, SevdeskContact } from '../../src/types/sevdesk';
+import { ShopifyOrder } from '../../src/types/shopify';
 
 /**
  * Sample Shopify orders

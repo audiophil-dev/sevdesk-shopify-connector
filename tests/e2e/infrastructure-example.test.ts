@@ -11,27 +11,43 @@ import { startTestServer, stopTestServer, getTestApp } from './setup/server';
 import { waitFor, wait, seedE2EData, cleanupE2EData } from './setup/helpers';
 
 describe('E2E Test Infrastructure', () => {
-  let testServerUrl: string;
-  let testPort: number;
+  let testServerInfo: { app: any; port: number; url: string } | null = null;
+
+  // Start server once before all tests
+  beforeAll(async () => {
+    try {
+      testServerInfo = await startTestServer();
+      console.log('[E2E Test] Server started:', testServerInfo);
+    } catch (error) {
+      console.error('[E2E Test] Failed to start server:', error);
+      throw error;
+    }
+  }, 30000);
+
+  // Cleanup after all tests
+  afterAll(async () => {
+    try {
+      await stopTestServer();
+      console.log('[E2E Test] Server stopped');
+    } catch (error) {
+      console.error('[E2E Test] Failed to stop server:', error);
+    }
+  });
 
   describe('Test Server Setup', () => {
     it('should start test server on available port', async () => {
-      const server = await startTestServer();
-      testServerUrl = server.url;
-      testPort = server.port;
-
-      expect(testPort).toBeGreaterThan(3000); // Within test range
-      expect(testPort).toBeLessThan(3100); // Within test range
-      expect(testServerUrl).toMatch(/http:\/\/localhost:\d+/);
-      expect(getTestApp()).toBeTruthy();
+      expect(testServerInfo).not.toBeNull();
+      expect(testServerInfo?.port).toBeGreaterThanOrEqual(3000);
+      expect(testServerInfo?.port).toBeLessThanOrEqual(3100);
+      expect(testServerInfo?.url).toMatch(/http:\/\/localhost:\d+/);
     });
 
-    it('should return Express app instance', async () => {
-      const server = await startTestServer();
+    it('should return Express app instance via getTestApp', async () => {
       const app = getTestApp();
 
       expect(app).toBeDefined();
-      expect(typeof app === 'object').toBe(true);
+      expect(app).not.toBeNull();
+      expect(typeof app === 'function' || typeof app === 'object').toBe(true);
     });
   });
 

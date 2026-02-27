@@ -37,7 +37,7 @@ jest.mock('../../../src/services/emailSender', () => ({
   sendPaymentEmail: jest.fn().mockResolvedValue({ success: true }),
 }));
 
-jest.mock('../config', () => ({
+jest.mock('../../../src/config', () => ({
   config: {
     shopify: { shop: 'test-shop', clientId: 'test-id', clientSecret: 'test-secret' },
     sevdesk: { apiKey: 'test-key', baseUrl: 'https://test.sevdesk.de' },

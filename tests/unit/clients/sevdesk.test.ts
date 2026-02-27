@@ -7,7 +7,7 @@ const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
 // Mock config
-jest.mock('../config', () => ({
+jest.mock('../../../src/config', () => ({
   config: {
     sevdesk: {
       apiKey: 'test-api-key',

@@ -11,11 +11,11 @@ import {
   SevdeskInvoiceResponse,
   SevdeskContact,
   SevdeskContactResponse
-} from '../../src/types/sevdesk';
+} from '../../../src/types/sevdesk';
 import {
   ShopifyOrder,
   ShopifyOrdersResponse
-} from '../../src/types/shopify';
+} from '../../../src/types/shopify';
 
 let activeMocks: nock.Scope[] = [];
 

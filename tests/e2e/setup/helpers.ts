@@ -7,15 +7,13 @@
  * - Seeding test data in the database
  */
 
-import { Pool } from 'pg';
 import {
-  SevdeskInvoice,
-  SevdeskContact
-} from '../../src/types/sevdesk';
+  SevdeskInvoice
+} from '../../../src/types/sevdesk';
 import {
   ShopifyOrder
-} from '../../src/types/shopify';
-import { getTestPool } from '../setup/database';
+} from '../../../src/types/shopify';
+import { getTestPool } from '../../setup/database';
 
 /**
  * Wait for a condition to become true
@@ -112,16 +110,25 @@ export async function triggerPollerCheck(): Promise<void> {
   console.log('[E2E Helpers] Triggering poller check for E2E testing...');
 
   try {
-    // Import the processor module which contains the poller logic
-    const processorModule = await import('../../src/services/processor');
-    const processor = processorModule.processor || processorModule.default;
+    // Import the processor module which contains the processPaidInvoice function
+    const processorModule = await import('../../../src/services/processor');
+    const processPaidInvoice = processorModule.processPaidInvoice;
 
-    if (typeof processor === 'object' && 'processInvoices' in processor) {
-      // Call the poller's check function directly
-      const result = await processor.processInvoices();
-      console.log('[E2E Helpers] Poller check completed:', result);
+    if (typeof processPaidInvoice === 'function') {
+      // Get unpaid invoices from database and process them
+      const pool = getTestPool();
+      const result = await pool.query(
+        'SELECT * FROM sevdesk_invoices WHERE status != $1',
+        ['paid']
+      );
+      const invoices = result.rows;
+
+      for (const invoice of invoices) {
+        await processPaidInvoice(invoice);
+      }
+      console.log(`[E2E Helpers] Poller check completed: processed ${invoices.length} invoices`);
     } else {
-      console.warn('[E2E Helpers] Could not find processInvoices method on processor');
+      console.warn('[E2E Helpers] Could not find processPaidInvoice function');
     }
   } catch (error) {
     console.error('[E2E Helpers] Error triggering poller check:', error);
@@ -172,7 +179,7 @@ export async function seedE2EData(data: {
 
         await pool.query(`
           INSERT INTO sevdesk_invoices (id, invoice_number, status, total, currency, invoice_date, due_date, header, update_time, contact_id)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
           ON CONFLICT (id) DO NOTHING
         `, [
           invoice.id,
@@ -353,7 +360,7 @@ export async function recordExists(
 export async function resetTestDatabase(): Promise<void> {
   console.log('[E2E Helpers] Resetting test database...');
 
-  const { teardownTestDatabase } = await import('../setup/database');
+  const { teardownTestDatabase } = await import('../../setup/database');
   await teardownTestDatabase();
 
   console.log('[E2E Helpers] Test database reset');

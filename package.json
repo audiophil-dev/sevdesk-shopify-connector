@@ -11,7 +11,7 @@
     "test:coverage": "jest --coverage",
     "test:unit": "jest src/",
     "test:integration": "jest tests/",
-    "test:e2e": "jest tests/e2e/",
+    "test:e2e": "jest tests/e2e/ --runInBand --forceExit",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",

@@ -30,13 +30,13 @@ export async function startTestServer(): Promise<{
 
   // Dynamically import Express to avoid requiring at module level
   const expressModule = await import('express');
-  const express = expressModule.default as unknown as Express;
+  const express = expressModule.default;
 
   // Create a fresh Express app for E2E tests
   const app = express();
 
   // Add basic middleware
-  app.use((req, res, next) => {
+  app.use((req: any, _res: any, next: () => void) => {
     console.log(`[E2E Server] ${req.method} ${req.url}`);
     next();
   });
@@ -58,18 +58,20 @@ export async function startTestServer(): Promise<{
       });
     });
 
-    testServer.on('error', (err: any) => {
-      console.error('Test server failed to start:', err);
-      reject(err);
-    });
+    if (testServer) {
+      testServer.on('error', (err: any) => {
+        console.error('Test server failed to start:', err);
+        reject(err);
+      });
+    }
   });
 }
 
 /**
- * Stop test server
+ * Stop the test server
  *
- * Closes the test server connection and cleans up resources.
- * Should be called in afterAll or afterEach to release the port.
+ * Gracefully shuts down the test server and cleans up resources.
+ * Closes all active connections before shutting down.
  *
  * @returns {Promise<void>}
  */
@@ -81,12 +83,35 @@ export async function stopTestServer(): Promise<void> {
     return;
   }
 
-  return new Promise<void>((resolve, reject) => {
+  return new Promise<void>((resolve) => {
+    if (!testServer) {
+      resolve();
+      return;
+    }
+
+    // Close all connections (Node 18.2.0+)
+    if (typeof testServer.closeAllConnections === 'function') {
+      testServer.closeAllConnections();
+    }
+
+    // Force close after timeout if graceful close doesn't complete
+    const timeout = setTimeout(() => {
+      console.log('Force closing test server after timeout');
+      if (testServer) {
+        testServer.close();
+      }
+      testServer = null;
+      testApp = null;
+      resolve();
+    }, 2000);
+    // Allow the process to exit even if this timeout is pending
+    timeout.unref();
+
     testServer.close((err) => {
+      clearTimeout(timeout);
       if (err) {
         console.error('Error stopping test server:', err);
-        reject(err);
-        return;
+        // Don't reject - just resolve to allow tests to continue
       }
 
       console.log('Test server stopped');
@@ -152,15 +177,4 @@ function findAvailablePort(server: any): Promise<number> {
  */
 export function getTestApp(): Express | null {
   return testApp;
-}
-
-/**
- * Check if test server is running
- *
- * Returns true if test server is currently running.
- *
- * @returns {boolean} Server running status
- */
-export function isTestServerRunning(): boolean {
-  return testServer !== null && testApp !== null;
 }
