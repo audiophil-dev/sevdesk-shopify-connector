@@ -1,0 +1,24 @@
+# Orchestration Worktree Status
+# Tracks all feature worktrees and their lifecycle states
+
+version: "1.0"
+session_id: orchestration-shopify-order-import-20260227-151650
+updated: "2026-02-27T15:16:50Z"
+
+# Orchestrator worktree
+orchestrator:
+  branch: orchestration/orchestration-shopify-order-import-20260227-151650
+  path: .worktrees/orchestrator-orchestration-shopify-order-import-20260227-151650
+  status: active
+
+# Feature worktrees
+worktrees:
+  shopify-order-import:
+    branch: feature/shopify-order-import
+    status: pending
+    agent: "@backend-specialist"
+    plan: workspace/plans/shopify-order-import/A2-plan.md
+    created_at: null
+    updated_at: null
+    commit: null
+    notes: "Worktree not yet created - will be created by backend-specialist"

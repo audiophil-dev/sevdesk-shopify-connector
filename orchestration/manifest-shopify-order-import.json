@@ -1,0 +1,13 @@
+{
+  "tasks": [
+    {
+      "role": "orchestrate-shopify-order-import",
+      "agent": "workflow-orchestrator",
+      "plan": "workspace/plans/shopify-order-import/A2-plan.md",
+      "ticket": "shopify-order-import",
+      "description": "Orchestrate Shopify Order Import: upgrade API to 2024-10, add bulk ops methods, create CSV parser, product sync, variant lookup, order transformer, bulk importer, reporter, and CLI commands",
+      "cwd": "/workspace/sevdesk-shopify-connector",
+      "dependencies": []
+    }
+  ]
+}
