@@ -9,6 +9,12 @@
     "start": "node dist/index.js",
     "test": "jest",
     "test:coverage": "jest --coverage",
+    "test:unit": "jest src/",
+    "test:integration": "jest tests/",
+    "test:e2e": "jest tests/e2e/",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "migrate": "ts-node src/database/migrate.ts"
   },
   "keywords": [
@@ -34,10 +40,7 @@
       "js",
       "json"
     ],
-    "globalSetup": "./tests/setup/globalSetup.ts",
-    "globalTeardown": "./tests/setup/globalTeardown.ts",
     "setupFilesAfterEnv": [
-      "./tests/setup/jest.setup.ts",
       "./tests/e2e/setup/jest.setup.ts"
     ]
   },
