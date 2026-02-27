@@ -21,3 +21,9 @@ handovers/
 
 # Shopify token cache
 .shopify-token.json
+
+# Symlinked directories from setup-worktree.sh (added during worktree setup)
+.github
+skill
+docs/global
+scripts/global
