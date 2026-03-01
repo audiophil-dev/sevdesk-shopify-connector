@@ -19,7 +19,18 @@ worktrees:
   admin-integration-phase1:
     path: ".worktrees/backend-admin-integration"
     branch: "feature/shopify-admin-integration-phase1"
-    status: active
+    status: pending-test
     created: "2026-02-27T15:20:00Z"
-    last_agent: "backend-specialist + frontend-specialist"
-    notes: "Shopify Admin UI Extensions for order-level SevDesk integration"
+    completed: "2026-02-27T16:00:00Z"
+    last_agent: "backend-specialist"
+    notes: "Implementation complete (8/8 steps). Backend + Frontend work by backend-specialist."
+    commits_ahead: 20
+    implementation_summary:
+      - "Step 1: order_sync_status table and repository"
+      - "Step 2: Orders API routes + Remix app routes"
+      - "Step 3: Main app pages (_index, app.settings, app layout)"
+      - "Step 4: Settings API + sevdesk-order-block extension"
+      - "Step 5: shopify.app.toml configuration"
+      - "Step 6: Order Status Block extension"
+      - "Step 7: Send to SevDesk Action extension"
+      - "Step 8: Processor sync status tracking"
