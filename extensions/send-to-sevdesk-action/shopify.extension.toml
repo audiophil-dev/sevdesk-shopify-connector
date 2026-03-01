@@ -1,0 +1,7 @@
+api_version = "2024-01"
+type = "admin_ui_extension"
+name = "Send to SevDesk"
+handle = "send-to-sevdesk-action"
+
+[[extensions.targeting]]
+target = "admin.order-details.action.render"

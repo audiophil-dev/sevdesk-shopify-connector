@@ -2,6 +2,7 @@ import { SevdeskInvoice } from '../types/sevdesk';
 import { shopifyClient } from '../clients/shopify';
 import { query, queryOne } from '../database/connection';
 import { sendPaymentEmail } from './emailSender';
+import { markSynced, markError } from '../database/syncStatusRepository';
 
 /**
  * Extract Shopify order number from Sevdesk invoice header.
@@ -83,6 +84,101 @@ async function recordNotification(
  * 5. Records the notification in the database
  */
 export async function processPaidInvoice(invoice: SevdeskInvoice): Promise<void> {
+   const NOTIFICATION_TYPE = 'payment_received';
+   
+   console.log(`[processor] Processing invoice ${invoice.invoiceNumber} (ID: ${invoice.id})`);
+   
+   try {
+     // Step 1: Check idempotency - don't process if already notified
+     const existingNotification = await isAlreadyProcessed(invoice.id, NOTIFICATION_TYPE);
+     if (existingNotification) {
+       console.log(`[processor] Invoice ${invoice.invoiceNumber} already processed, skipping`);
+       return;
+     }
+     
+     // Step 2: Extract Shopify order number from SevDesk invoice header
+     const orderNumber = extractOrderNumber(invoice.header ?? null);
+     
+     if (!orderNumber) {
+       console.log(`[processor] No Shopify order number found in invoice header: ${invoice.header || 'null'}`);
+     }
+     
+     // Step 3: Find matching Shopify order by order number
+     const order = await shopifyClient.findOrderByOrderName(orderNumber);
+     
+     if (!order) {
+       console.log(`[processor] No Shopify order found for order number ${orderNumber}`);
+       await recordNotification(
+         invoice.id,
+         NOTIFICATION_TYPE,
+         '',
+         order.id,
+         'failed',
+         `No matching Shopify order found for order number ${orderNumber}`
+       );
+       return;
+     }
+     
+     const customerEmail = order.email || '';
+     console.log(`[processor] Found Shopify order: ${order.name} (${order.id}), customer: ${customerEmail || 'no email'}`);
+     console.log(`[processor] Current order status: ${order.displayFinancialStatus}`);
+     
+     // Check if running in dry-run mode
+     const dryRun = process.env.DRY_RUN === 'true';
+     
+     if (dryRun) {
+       console.log(`[processor] [DRY RUN] Would mark order ${order.name} as paid (no actual changes)`);
+       console.log(`[processor] [DRY RUN] Would send payment notification email to ${customerEmail}`);
+       console.log(`[processor] [DRY RUN] Would record successful notification in database`);
+       
+       // Record dry-run notification (so we can track what would have happened)
+       await recordNotification(
+         invoice.id,
+         NOTIFICATION_TYPE,
+         customerEmail,
+         order.id,
+         'dry-run',
+         'Dry run mode - no actual changes made'
+       );
+       return;
+     }
+     
+     // Step 4: Update order status to "paid" in Shopify
+     await shopifyClient.markOrderAsPaid(order.id);
+     
+     console.log(`[processor] Order ${order.name} marked as paid`);
+     
+     // Step 5: Send payment notification email
+     await sendPaymentEmail(order);
+     
+     console.log(`[processor] Payment notification sent for order ${order.name}`);
+     
+     // Step 6: Record successful notification in database
+     await recordNotification(
+       invoice.id,
+       NOTIFICATION_TYPE,
+       customerEmail,
+       order.id,
+       'sent',
+       'Payment notification sent successfully'
+     );
+     
+   } catch (error) {
+     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+     
+     console.error(`[processor] Error processing invoice ${invoice.invoiceNumber}:`, errorMessage);
+     
+     // Record error notification
+     await recordNotification(
+       invoice.id,
+       NOTIFICATION_TYPE,
+       customerEmail,
+       order.id,
+       'failed',
+       `Failed to process invoice: ${errorMessage}`
+     );
+   }
+}
   const NOTIFICATION_TYPE = 'payment_received';
   
   console.log(`[processor] Processing invoice ${invoice.invoiceNumber} (ID: ${invoice.id})`);
