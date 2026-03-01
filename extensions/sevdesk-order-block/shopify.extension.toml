@@ -1,0 +1,7 @@
+api_version = "2024-01"
+type = "admin_ui_extension"
+name = "SevDesk Order Status"
+handle = "sevdesk-order-block"
+
+[[extensions.targeting]]
+target = "admin.order-details.block.render"

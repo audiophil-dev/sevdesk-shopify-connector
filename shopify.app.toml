@@ -1,0 +1,15 @@
+name = "sevdesk-connector"
+client_id = "${SHOPIFY_CLIENT_ID}"
+application_url = "${APP_URL}/"
+embedded = true
+
+[access_scopes]
+scopes = "read_orders,write_orders"
+
+[auth]
+redirect_urls = [
+  "${APP_URL}/auth/callback"
+]
+
+[webhooks]
+api_version = "2024-01"

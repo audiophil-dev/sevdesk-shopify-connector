@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import ordersRouter from './routes/orders';
+import settingsRouter from './routes/settings';
 
 const app = express();
 
@@ -13,9 +14,6 @@ app.get('/health', (_req: Request, res: Response) => {
   });
 });
 
-// Mount orders API routes
-app.use('/api/orders', ordersRouter);
-
 // Error handling middleware
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Error:', err.message);
@@ -24,5 +22,9 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     status: 500,
   });
 });
+
+// Mount API routes
+app.use('/api/orders', ordersRouter);
+app.use('/api/settings', settingsRouter);
 
 export default app;
