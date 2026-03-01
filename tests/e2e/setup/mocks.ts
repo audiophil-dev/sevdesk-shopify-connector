@@ -160,7 +160,7 @@ export function clearAPIMocks(): void {
     try {
       // nock v14 uses persist() to keep mocks, just clear the array
       // The scopes will be cleaned up when the test ends
-    } catch (e) {
+    } catch {
       // Ignore cleanup errors
     }
   });
