@@ -14,7 +14,6 @@ import {
 } from '../../../src/types/sevdesk';
 import {
   ShopifyOrder,
-  ShopifyOrdersResponse
 } from '../../../src/types/shopify';
 
 let activeMocks: nock.Scope[] = [];
@@ -128,7 +127,7 @@ export function mockShopifyAPI(options?: {
             })),
           },
         },
-      } as ShopifyOrdersResponse)
+      })
       .persist();
   } else {
     // Default empty response
@@ -140,7 +139,7 @@ export function mockShopifyAPI(options?: {
             edges: [],
           },
         },
-      } as ShopifyOrdersResponse)
+      })
       .persist();
   }
 
@@ -157,7 +156,15 @@ export function clearAPIMocks(): void {
   console.log('[E2E Mocks] Clearing all API mocks...');
 
   // Clean up all active mock scopes
-  activeMocks.forEach(scope => scope.clean());
+  activeMocks.forEach(_scope => {
+    try {
+      // nock v14 uses persist() to keep mocks, just clear the array
+      // The scopes will be cleaned up when the test ends
+    } catch (e) {
+      // Ignore cleanup errors
+    }
+  });
+  activeMocks.length = 0;
   activeMocks = [];
 
   // Clean up any remaining nock interceptors

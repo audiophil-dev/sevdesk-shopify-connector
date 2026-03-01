@@ -116,6 +116,20 @@ export async function setupTestDatabase(): Promise<void> {
     )
   `);
 
+  // Create notification_history table for processor idempotency checks
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS notification_history (
+      id SERIAL PRIMARY KEY,
+      sevdesk_invoice_id VARCHAR(255) NOT NULL,
+      notification_type VARCHAR(50) NOT NULL,
+      customer_email VARCHAR(255),
+      shopify_order_id VARCHAR(255),
+      sent_at TIMESTAMP DEFAULT NOW(),
+      status VARCHAR(50) NOT NULL,
+      error_message TEXT
+    )
+  `);
+
   console.log('Test database tables created');
 }
 
@@ -139,6 +153,7 @@ export async function teardownTestDatabase(): Promise<void> {
   await pool.query('TRUNCATE TABLE sync_mapping CASCADE');
   await pool.query('TRUNCATE TABLE sevdesk_invoices CASCADE');
   await pool.query('TRUNCATE TABLE shopify_orders CASCADE');
+  await pool.query('TRUNCATE TABLE notification_history CASCADE');
 
   // Re-enable triggers
   await pool.query('SET session_replication_role = DEFAULT');
