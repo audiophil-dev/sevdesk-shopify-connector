@@ -1,4 +1,4 @@
-import { pool } from '../config/database';
+import { pool } from './database/connection';
 import type { OrderSyncStatus, SyncStatus } from '../types/syncStatus';
 
 export async function getSyncStatus(shopifyOrderId: string): Promise<OrderSyncStatus | null> {
@@ -54,7 +54,7 @@ export async function upsertSyncStatus(data: Partial<OrderSyncStatus>): Promise<
       status = EXCLUDED.status,
       error_message = EXCLUDED.error_message,
       synced_at = EXCLUDED.synced_at,
-      updated_at = $8
+      updated_at = EXCLUDED.updated_at
     RETURNING *
   `, [
     shopifyOrderId,

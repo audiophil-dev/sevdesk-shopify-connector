@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
+import ordersRouter from './routes/orders';
 
 const app = express();
 
@@ -11,6 +12,9 @@ app.get('/health', (_req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// Mount orders API routes
+app.use('/api/orders', ordersRouter);
 
 // Error handling middleware
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
