@@ -31,8 +31,14 @@
 
 ## Doing
 - Shopify order import: Specification and plan created, awaiting approval
+- Shopify Admin Integration Phase 1: Specification (B1-spec.md) and plan (B2-plan.md) created, awaiting approval
 
 ## Next
+- Implement Shopify Admin Integration Phase 1 (after approval):
+  - Main App Page (dashboard + settings)
+  - Order Status Block extension
+  - Send to SevDesk Action extension
+  - Backend API routes
 - Implement Shopify order import (after approval):
   - Phase 1: API upgrade + bulk operations methods
   - Phase 2: Product sync CLI
