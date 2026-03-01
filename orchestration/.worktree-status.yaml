@@ -2,12 +2,19 @@ worktrees:
   shopify-order-import:
     path: ".worktrees/backend-shopify-order-import"
     branch: "feature/shopify-order-import"
-    status: active
+    status: pending-test
     created: "2026-02-27T14:30:00Z"
-    last_session: "backend-specialist-shopify-order-import"
-    last_agent: "backend-specialist"
-    notes: "Implementing Shopify order import with bulk operations API"
-    commits_ahead: 0
+    completed: "2026-02-27T15:30:00Z"
+    last_agent: "code-specialist"
+    notes: "Implementation complete (11/11 steps). NO TESTING. TypeScript errors need resolution."
+    commits_ahead: 3
+    handover: ".worktrees/backend-shopify-order-import/workspace/plans/shopify-order-import/A2-plan.handover.md"
+    critical_gaps:
+      - "No unit tests"
+      - "No integration tests"
+      - "No manual testing"
+      - "TypeScript errors unresolved"
+    estimated_additional_work: "8-12h for testing and production readiness"
 
   admin-integration-phase1:
     path: ".worktrees/backend-admin-integration"
