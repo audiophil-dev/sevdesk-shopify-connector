@@ -8,3 +8,11 @@ worktrees:
     last_agent: "backend-specialist"
     notes: "Implementing Shopify order import with bulk operations API"
     commits_ahead: 0
+
+  admin-integration-phase1:
+    path: ".worktrees/backend-admin-integration"
+    branch: "feature/shopify-admin-integration-phase1"
+    status: active
+    created: "2026-02-27T15:20:00Z"
+    last_agent: "backend-specialist + frontend-specialist"
+    notes: "Shopify Admin UI Extensions for order-level SevDesk integration"
